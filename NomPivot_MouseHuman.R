@@ -165,8 +165,8 @@ nomConvert_Mouse_Human <- function(genes){
                                               ##################
                                               #NOTE: IF FUNCTION ERRORS WITH HTTP 403 CODE - switch comment/uncomment status for 
                                               #      the two mutate lines directly below and re-run.
-                                              mutate(MUS_KEGGID = paste("mmu",MUS_EntrezID,sep = ":")) %>%
-                                              # mutate(MUS_KEGGID = keggConv("genes",MUS_NCBIID)[1]) %>%
+                                              # mutate(MUS_KEGGID = paste("mmu",MUS_EntrezID,sep = ":")) %>%
+                                              mutate(MUS_KEGGID = keggConv("genes",MUS_NCBIID)[1]) %>%
                                               ##################
                                               filter(!is.na(MUS_KEGGID)) %>%
                                               #Retrieve mouse gene results (as list) from mouse KEGGID

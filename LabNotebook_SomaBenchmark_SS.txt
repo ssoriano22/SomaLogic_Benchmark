@@ -432,7 +432,7 @@ Seer Proteograph PAS: Pending (requires unique login)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * Calculated aptamer CVs across samples for total (single) boxplot and by-group boxplot
-  ** Will review with Matt - in general these seem 
+  ** Will review with Matt - in general these seem good
 * Created bar graphs comparing mouse normalized and pre-normalized data versions of hemolysis vs. pooled 55uL for hemoglobin and haptoglobin
   ** In general not much difference between groups, although there are more differences in pre-normalized data (meaning normalization makes hemolyzed samples ok?)
 
@@ -762,7 +762,31 @@ Seer Proteograph PAS: Pending (requires unique login)
   ** group_human_summary = combined_human_df %>% mutate(Screening.Outcome = ifelse(!is.na(Screening.Outcome),Screening.Outcome,ifelse(SampleType == "Buffer","Buffer",ifelse(SampleType == "Calibrator","Calibrator",ifelse(SampleType == "QC","QC",NA))))) %>% group_by(Screening.Outcome) %>% summarise(Group_Count = n())
 * Created github repo to store code/maybe relevant figures for paper
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+25OCT2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+* Needed to confirm count numbers post-filter for both datasets, ran the following in R console
+  ** test_df = aptcount_filt_human_df %>% group_by(Sample_ID) %>% summarise(Sample_ID, numSigApt) %>% unique()
+  ** test_m_df = aptcount_filt_mouse_df %>% group_by(Sample_ID) %>% summarise(Sample_ID, numSigApt) %>% unique()
  
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+27OCT2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
-  
+* Needed paper for log2 CV calculation from Matt again...not sure where that went to: https://medcraveonline.com/MOJPB/correct-use-of-percent-coefficient-of-variation-cv-formula-for-log-transformed-data.html
+* Made edits to some of the labeling for graphs used in my fall 2023 paper
+* Created new lucidchart combo-figures to fall 2023 paper
+* Both nomenclature functions are working again! yay! (OHSU must have fixed the internet connectivity problem...?)
+* Updated GitHub repo w/ updated code, nomenclature fxn, LB, and paper (just in case)
+
+
+
+
+
+
+
+
+
+
+

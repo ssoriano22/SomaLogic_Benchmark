@@ -385,7 +385,7 @@ aptcount_filt_human_df = filt_human_df %>% filter(SampleType == "Sample") %>%
 aptcov_filtmouse_plot = aptcount_filt_mouse_df %>% 
   ggplot(aes(x = reorder(Sample_ID, row_ID), y = numSigApt, colour = SampleType)) +
   geom_point(size = 1) +
-  labs(title = "Mouse",
+  labs(title = "Mouse - Normalized",
        x = "",
        y = "Count") +
   theme(legend.position = "none") +
@@ -395,9 +395,10 @@ aptcov_filtmouse_plot = aptcount_filt_mouse_df %>%
   geom_hline(yintercept=6379, colour = "red") + #Number of high/medium human aptamers in mouse (expected minimum apt count per mouse sample) = 6379
   #theme(axis.text.x = element_text(angle = 90, vjust = 0.5, size = 5)) +
   theme(axis.text.x = element_blank()) +
-  theme(axis.title = element_text(vjust = 0.5, size = 12)) +
-  theme(legend.title = element_text(size = 12)) +
-  theme(title = element_text(size = 14)) +
+  theme(axis.title = element_text(vjust = 0.5, size = 10)) +
+  theme(title = element_text(size = 12)) +
+  theme(legend.title = element_text(size = 10)) +
+  theme(legend.text = element_text(size = 8)) +
   scale_colour_manual(values=c("#F8766D", "#A3A500", "#00BF7D", "#00B0F6", "#E76BF3"), drop = FALSE)
 #ggsave("aptcov_filtmouse_plot.png")
 
@@ -405,7 +406,7 @@ aptcov_filtmouse_plot = aptcount_filt_mouse_df %>%
 aptcov_filthuman_plot = aptcount_filt_human_df %>%
   ggplot(aes(x = reorder(Sample_ID, row_ID), y = numSigApt,color = SampleType)) +
   geom_point(size = 1) +
-  labs(title = "Human",
+  labs(title = "Human - Normalized",
        x = "Sample_ID",
        y = "Count") +
   theme(legend.position = "none") +
@@ -414,19 +415,20 @@ aptcov_filthuman_plot = aptcount_filt_human_df %>%
   geom_hline(yintercept=length(eLoD_human_df$AptName), colour = "blue") + #Max number of aptamers = 7596
   #theme(axis.text.x = element_text(angle = 90, vjust = 0.5, size = 5)) +
   theme(axis.text.x = element_blank()) +
-  theme(axis.title = element_text(vjust = 0.5, size = 12)) +
-  theme(legend.title = element_text(size = 12)) +
-  theme(title = element_text(size = 14)) +
+  theme(axis.title = element_text(vjust = 0.5, size = 10)) +
+  theme(title = element_text(size = 12)) +
+  theme(legend.title = element_text(size = 10)) +
+  theme(legend.text = element_text(size = 8)) +
   scale_colour_manual(values=c("#F8766D", "#A3A500", "#00BF7D", "#00B0F6", "#E76BF3"), drop = FALSE)
-# ggsave("aptcov_filthuman_plot.png")
+#ggsave("aptcov_filthuman_plot.png")
 
 ```
 
 ```{r Plot_eLoD_Filter_AptCount}
 #Plot filtered aptamer counts per sample
 fig_eLoDFilt_AptCount = ggarrange(aptcov_filtmouse_plot, aptcov_filthuman_plot, labels="AUTO", ncol = 1, nrow = 2, common.legend = TRUE, legend = "right")
-annotate_figure(fig_eLoDFilt_AptCount, top = text_grob("Aptamer Count per Sample", size = 14))
-ggsave("fig_eLoDFilt_AptCount.png")
+annotate_figure(fig_eLoDFilt_AptCount, top = text_grob("Aptamer Count per Sample", size = 16))
+ggsave("fig_eLoDFilt_AptCount.png", width = 7.29, height = 6.5, units = "in")
 ```
 
 \newline
@@ -546,19 +548,19 @@ sample_var_mouse_df = filt_mouse_df %>% filter(eLoD_Flag == TRUE) %>%
 ```{r Plot_Int_Dist_Mouse}
 #Boxplot of intensity distributions per sample - mouse
 sample_int_dist_mouse_plot = sample_var_mouse_df %>%
-  ggplot(aes(x = Sample_ID, y = Intensity, fill = Group_final)) +
+  mutate(`Mouse Condition Group` = Group_final) %>%
+  ggplot(aes(x = Sample_ID, y = Intensity, fill = `Mouse Condition Group`)) +
   geom_boxplot(outlier.shape = NA) +
-  labs(title = "Intensity Distribution per Sample: Mouse",
-       subtitle = "Filter: eLoD = M_blank + 4.9MAD_blank") +
+  labs(title = "Mouse - Normalized",
+       x = "Samples") +
   theme_bw() +
-  #stat_mean_sd_text(size = 2, y.pos = 6000) +
   ylim(0,6000) +
-  #geom_hline(yintercept=1000, colour="red", linetype = "dashed") +
-  #theme(axis.text.x = element_text(angle = 90, vjust = 0.5, size = 6))
   theme(axis.text.x = element_blank()) +
-  theme(axis.title = element_text(vjust = 0.5, size = 12)) +
-  theme(legend.title = element_text(size = 12)) +
-  theme(title = element_text(size = 14))
+  theme(axis.title.y = element_blank()) +
+  theme(axis.title = element_text(vjust = 0.5, size = 10)) +
+  theme(title = element_text(size = 12)) +
+  theme(legend.title = element_text(size = 10)) +
+  theme(legend.text = element_text(size = 8)) 
 ggsave("sample_int_dist_mouse_plot.png")
 sample_int_dist_mouse_plot
 ```
@@ -588,19 +590,19 @@ sample_var_mouse_alt_df = filt_mouse_alt_df %>% filter(eLoD_Flag == TRUE) %>%
 ```{r Plot_Int_Dist_Mouse_Alt}
 #Boxplot of intensity distributions per sample - mouse
 sample_int_dist_mouse_alt_plot = sample_var_mouse_alt_df %>%
-  ggplot(aes(x = Sample_ID, y = Intensity, fill = Group_final)) +
+  mutate(`Mouse Condition Group` = Group_final) %>%
+  ggplot(aes(x = Sample_ID, y = Intensity, fill = `Mouse Condition Group`)) +
   geom_boxplot(outlier.shape = NA) +
-  labs(title = "Intensity Distribution per Sample: Mouse (Pre-Normalization)",
-       subtitle = "Filter: eLoD = M_blank + 4.9MAD_blank") +
+  labs(title = "Mouse - Pre-Normalization",
+       x = "Samples") +
   theme_bw() +
   #stat_mean_sd_text(size = 2, y.pos = 6000) +
   ylim(0,6000) +
-  #geom_hline(yintercept=1000, colour="red", linetype = "dashed") +
-  #theme(axis.text.x = element_text(angle = 90, vjust = 0.5, size = 6))
   theme(axis.text.x = element_blank()) +
-  theme(axis.title = element_text(vjust = 0.5, size = 12)) +
-  theme(legend.title = element_text(size = 12)) +
-  theme(title = element_text(size = 14))
+  theme(axis.title = element_text(vjust = 0.5, size = 10)) +
+  theme(title = element_text(size = 12)) +
+  theme(legend.title = element_text(size = 10)) +
+  theme(legend.text = element_text(size = 8)) 
 ggsave("sample_int_dist_mouse_alt_plot.png")
 sample_int_dist_mouse_alt_plot
 ```
@@ -633,10 +635,10 @@ sample_var_human_df = filt_human_df %>% filter(eLoD_Flag == TRUE) %>%
 ```{r Plot_Int_Dist_Human}
 #Boxplot of intensity distributions per sample - human
 sample_int_dist_human_plot = sample_var_human_df %>%
-  ggplot(aes(x = reorder(Sample_ID,row_ID), y = Intensity, fill = Clinical.Diagnosis)) +
+  mutate(`Human Condition Group` = Clinical.Diagnosis) %>%
+  ggplot(aes(x = reorder(Sample_ID,row_ID), y = Intensity, fill = `Human Condition Group`)) +
   geom_boxplot(outlier.shape = NA) +
-  labs(title = "Intensity Distribution per Sample: Human",
-       subtitle = "Filter: eLoD = M_blank + 4.9MAD_blank",
+  labs(title = "Human - Normalized",
        x = "Samples") +
   theme_bw() +
   #stat_mean_sd_text(size = 2, y.pos = 6000) +
@@ -644,9 +646,11 @@ sample_int_dist_human_plot = sample_var_human_df %>%
   #geom_hline(yintercept=1000, colour="red", linetype = "dashed") +
   #theme(axis.text.x = element_text(angle = 90, vjust = 0.5, size = 6))
   theme(axis.text.x = element_blank()) +
-  theme(axis.title = element_text(vjust = 0.5, size = 12)) +
-  theme(legend.title = element_text(size = 12)) +
-  theme(title = element_text(size = 14))
+  theme(axis.title.y = element_blank()) +
+  theme(axis.title = element_text(vjust = 0.5, size = 10)) +
+  theme(title = element_text(size = 12)) +
+  theme(legend.title = element_text(size = 10)) +
+  theme(legend.text = element_text(size = 8)) 
 ggsave("sample_int_dist_human_plot.png")
 sample_int_dist_human_plot
 ```
@@ -679,20 +683,18 @@ sample_var_human_alt_df = filt_human_alt_df %>% filter(eLoD_Flag == TRUE) %>%
 ```{r Plot_Int_Dist_Human_Alt}
 #Boxplot of intensity distributions per sample - human
 sample_int_dist_human_alt_plot = sample_var_human_alt_df %>%
-  ggplot(aes(x = reorder(Sample_ID,row_ID), y = Intensity, fill = Clinical.Diagnosis)) +
+  mutate(`Human Condition Group` = Clinical.Diagnosis) %>%
+  ggplot(aes(x = reorder(Sample_ID,row_ID), y = Intensity, fill = `Human Condition Group`)) +
   geom_boxplot(outlier.shape = NA) +
-  labs(title = "Intensity Distribution per Sample: Human (Pre-Normalization)",
-       subtitle = "Filter: eLoD = M_blank + 4.9MAD_blank",
+  labs(title = "Human - Pre-Normalization",
        x = "Samples") +
   theme_bw() +
-  #stat_mean_sd_text(size = 2, y.pos = 6000) +
   ylim(0,6000) +
-  #geom_hline(yintercept=1000, colour="red", linetype = "dashed") +
-  #theme(axis.text.x = element_text(angle = 90, vjust = 0.5, size = 6)) +
   theme(axis.text.x = element_blank()) +
-  theme(axis.title = element_text(vjust = 0.5, size = 12)) +
-  theme(legend.title = element_text(size = 12)) +
-  theme(title = element_text(size = 14))
+  theme(axis.title = element_text(vjust = 0.5, size = 10)) +
+  theme(title = element_text(size = 12)) +
+  theme(legend.title = element_text(size = 10)) +
+  theme(legend.text = element_text(size = 8)) 
 ggsave("sample_int_dist_human_alt_plot.png")
 sample_int_dist_human_alt_plot
 ```
@@ -700,6 +702,19 @@ sample_int_dist_human_alt_plot
 \newline
 
 **Figure 3: Boxplots showing distribution of aptamer intensities by sample for mouse and human datasets, final data and pre-normalization data for each. Plots are color coded by clinical group for both datasets. Most samples in each dataset have similar intensity distributions. Calibrator samples and hemolysis samples (mouse only) show slightly wider distribution ranges. The sole AK mouse sample has a slightly lower-shifted distribution compared to other samples.**
+
+```{r Combo_Mouse_IntDist_Plots}
+#Plot combined mouse intensity distribution plots - normalized and pre-normalization
+fig_ComboMouse_IntDist = ggarrange(sample_int_dist_mouse_alt_plot, sample_int_dist_mouse_plot, labels=c("E","F"), ncol = 2, nrow = 1, common.legend = TRUE, legend = "right")
+annotate_figure(fig_ComboMouse_IntDist, top = text_grob("Intensity Distribution per Sample", size = 16))
+ggsave("fig_ComboMouse_IntDist.png", width = 14, height = 4.51, units = "in")
+```
+```{r Combo_Human_IntDist_Plots}
+#Plot combined mouse intensity distribution plots - normalized and pre-normalization
+fig_ComboHuman_IntDist = ggarrange(sample_int_dist_human_alt_plot, sample_int_dist_human_plot, labels=c("G","H"), ncol = 2, nrow = 1, common.legend = TRUE, legend = "right")
+#annotate_figure(fig_ComboHuman_IntDist, top = text_grob("Intensity Distribution per Sample", size = 20))
+ggsave("fig_ComboHuman_IntDist.png", width = 14, height = 4.51, units = "in")
+```
 
 ```{r Plot_Removed_Apt_Mouse}
 #Plot removed aptamer count - mouse
@@ -1070,22 +1085,24 @@ aptamer_CVall_mouse_plot
 
 #Plot CVs - by group
 aptamer_CVgroup_mouse_plot = aptamer_CVgroup_mouse_df %>%
-  ggplot(aes(x = Group_final, y = CV, fill = Group_final)) +
+  filter(!Group_final == "Buffer") %>% 
+  mutate(`Condition Group` = Group_final) %>%
+  ggplot(aes(x = Group_final, y = CV, fill = `Condition Group`)) +
   geom_boxplot(outlier.shape = NA) +
-  labs(title = "Aptamer CV Distribution (By Group): Mouse",
-       subtitle = "Outliers are hidden",
-       x = "") +
+  labs(title = "Mouse - Normalized") +
   theme_bw() +
   ylim(0, 100) +
   stat_mean_sd_text(y.pos = 90, size = 3, angle=90) +
-  theme(legend.position = "none") + 
-  rremove("xlab") +
-  theme(axis.text.x = element_text(angle = 55, vjust = 0.5, size = 8)) +
-  theme(axis.title = element_text(size = 14)) +
-  theme(title = element_text(size = 14))
-ggsave("aptamer_CVgroup_mouse_plot.png")
+  theme(axis.title.x = element_blank()) +
+  theme(axis.text.x = element_blank()) +
+  theme(axis.title = element_text(size = 10)) +
+  theme(title = element_text(size = 12)) +
+  theme(legend.title = element_text(size = 10)) +
+  theme(legend.text = element_text(size = 8)) 
+ggsave("aptamer_CVgroup_mouse_plot.png", width = 7.29, height = 4.51, units = "in")
 aptamer_CVgroup_mouse_plot
 ```
+
 ```{r AptamerCV_Mouse_Alt}
 #Calculate CV of each aptamer - plot all CVs as boxplot
 aptamer_CVall_mouse_alt_df = filt_mouse_alt_df %>%
@@ -1153,7 +1170,7 @@ aptamer_CVgroup_mouse_alt_plot = aptamer_CVgroup_mouse_alt_df %>%
   stat_mean_sd_text(y.pos = 90, size = 3, angle=90) +
   theme(legend.position = "none") + 
   rremove("xlab") +
-  theme(axis.text.x = element_text(angle = 55, vjust = 0.5, size = 8)) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, size = 8)) +
   theme(axis.title = element_text(size = 14)) +
   theme(title = element_text(size = 14))
 ggsave("aptamer_CVgroup_mouse_alt_plot.png")
@@ -1221,22 +1238,24 @@ aptamer_CVall_human_plot
 
 #Plot CVs - by group
 aptamer_CVgroup_human_plot = aptamer_CVgroup_human_df %>%
-  ggplot(aes(x = reorder(Clinical.Diagnosis, row_ID), y = CV, fill = Clinical.Diagnosis)) +
+  filter(!Clinical.Diagnosis == "Buffer") %>% 
+  mutate(`Condition Group` = Clinical.Diagnosis) %>%
+  ggplot(aes(x = reorder(Clinical.Diagnosis, row_ID), y = CV, fill = `Condition Group`)) +
   geom_boxplot(outlier.shape = NA) +
-  labs(title = "Aptamer CV Distribution (By Group): Human",
-       subtitle = "Outliers are hidden",
-       x = "") +
+  labs(title = "Human - Normalized") +
   theme_bw() +
   ylim(0, 100) +
   stat_mean_sd_text(y.pos = 90, size = 3, angle=90) +
-  theme(legend.position = "none") + 
-  rremove("xlab") +
-  theme(axis.text.x = element_text(angle = 55, vjust = 0.5, size = 8)) +
-  theme(axis.title = element_text(size = 14)) +
-  theme(title = element_text(size = 14))
+  theme(axis.title.x = element_blank()) +
+  theme(axis.text.x = element_blank()) +
+  theme(axis.title = element_text(size = 10)) +
+  theme(title = element_text(size = 12)) +
+  theme(legend.title = element_text(size = 10)) +
+  theme(legend.text = element_text(size = 8)) 
 ggsave("aptamer_CVgroup_human_plot.png", width = 7.29, height = 4.51, units = "in")
 aptamer_CVgroup_human_plot
 ```
+
 ```{r AptamerCV_Human_Alt}
 #Calculate CV of each aptamer - plot all CVs as boxplot
 aptamer_CVall_human_alt_df = filt_human_alt_df %>%
@@ -1309,6 +1328,13 @@ aptamer_CVgroup_human_alt_plot = aptamer_CVgroup_human_alt_df %>%
   theme(title = element_text(size = 14))
 ggsave("aptamer_CVgroup_human_alt_plot.png")
 aptamer_CVgroup_human_alt_plot
+```
+
+```{r Plot_eLoD_Filter_AptCount}
+#Plot filtered aptamer counts per sample
+fig_Combo_CVplots = ggarrange(aptamer_CVgroup_mouse_plot, aptamer_CVgroup_human_plot, labels=c("C","D"), ncol = 1, nrow = 2)
+annotate_figure(fig_Combo_CVplots, top = text_grob("Aptamer CV Distribution per Condition", size = 16))
+ggsave("fig_Combo_CVplots.png", width = 7.29, height = 6.5)
 ```
 
 ## SomaLogic Data Analysis
@@ -1477,7 +1503,7 @@ WiT_C_mouse_volcano_plot = WiT_res_mouse_df %>%
 WiT_C_mouse_volcano_plotly = ggplotly(WiT_C_mouse_volcano_plot, tooltip = "Target")
 saveWidget(WiT_C_mouse_volcano_plotly, "WiT_C_mouse_volcano_plotly.html", selfcontained = F, libdir = "lib")
 
-fig_WiT_Dilution_Mouse = ggarrange(WiT_A_mouse_volcano_plot, WiT_B_mouse_volcano_plot, WiT_C_mouse_volcano_plot, labels="AUTO", ncol = 3, nrow = 1)
+fig_WiT_Dilution_Mouse = ggarrange(WiT_A_mouse_volcano_plot, WiT_B_mouse_volcano_plot, WiT_C_mouse_volcano_plot, ncol = 3, nrow = 1)
 annotate_figure(fig_WiT_Dilution_Mouse, top = text_grob("Wilcox Test for Proteins in SomaLogic Study: Mouse", size = 14))
 ggsave("fig_WiT_Dilution_Mouse.png")
 ```
@@ -1511,19 +1537,18 @@ WiT_boxDS_mouse_df = WiT_res_mouse_df %>% pivot_longer(names_to = "Dilution_Comp
                                                         values_to = "FC",
                                                         cols = starts_with("Diff")) %>%
                                           mutate(Dilution_Comparison = ifelse(Dilution_Comparison == "Diff_A",
-                                                                              "35uL_55uL",
+                                                                              "35uL-55uL",
                                                                               ifelse(Dilution_Comparison == "Diff_B",
-                                                                                     "35uL_55uLDiluted",
-                                                                                     "55uL_55uLDiluted")))
+                                                                                     "35uL-55uLDiluted",
+                                                                                     "55uL-55uLDiluted")))
 
 #Boxplot of intensity distributions per sample - mouse
 WiT_boxDS_mouse_plot = WiT_boxDS_mouse_df %>%
   ggplot(aes(x = Dilution_Comparison, y = FC, fill = Dilution_Comparison)) +
   geom_boxplot(alpha = 0.5) +
   #geom_text(aes(label = median(FC))) +
-  labs(title = "Fold Change Distribution per Dilution Comparison: Mouse",
-       subtitle = "eLoD Filter, Pre-Normalization",
-       x = "",
+  labs(title = "Fold Change (FC) Distribution per Dilution Comparison: Mouse",
+       subtitle = "",
        y = "Log2(FC)") +
   theme_bw() +
   #stat_mean_sd_text(size = 2, y.pos = 6000) +
@@ -1531,11 +1556,10 @@ WiT_boxDS_mouse_plot = WiT_boxDS_mouse_df %>%
   geom_hline(yintercept=log2(55/35), colour="purple4", linetype = "dashed") +
   theme(legend.position = "none") +
   theme(axis.text.x = element_text(vjust = 0.5, size = 10)) +
-  #theme(axis.text.x = element_blank()) +
-  theme(axis.title = element_text(vjust = 0.5, size = 12)) +
-  theme(legend.title = element_text(size = 12)) +
-  theme(title = element_text(size = 14))
-ggsave("WiT_boxDS_mouse_plot.png")
+  theme(axis.title.x = element_blank()) +
+  theme(axis.title = element_text(vjust = 0.5, size = 10)) +
+  theme(title = element_text(size = 12))
+ggsave("WiT_boxDS_mouse_plot.png", width = 6, height = 4.51, units = "in")
 WiT_boxDS_mouse_plot
 ```
 
@@ -2479,15 +2503,15 @@ WiT_DE3_mouse_volcano_plot = WiT_DE3_mouse_df %>%
   geom_vline(xintercept = -2, linetype = "dashed", color = "red") +
   geom_text_repel(aes(label = proteins_sig), max.overlaps = 20) +
   scale_color_manual(values = c("black", "red")) +
-  labs(title = "Mouse",
+  labs(title = "Volcano Plot: KMC-PDAC v. KMC Control (Mouse)",
        x = "Log2(KMC-PDAC-KMC_Control)",
-       y = "",
-       subtitle = "") +
+       y = "-Log10(pvalue)",
+       subtitle = "Wilcox Test") +
   theme_bw() +
   xlim(-5,5) +
   theme(legend.position = "none") +
   theme(plot.subtitle = element_text(face = "italic"))
-#ggsave("WiT_DE3_mouse_volcano_plot.png")
+ggsave("WiT_DE3_mouse_volcano_plot.png")
 
 WiT_DE3_mouse_volcano_plotly = ggplotly(WiT_DE3_mouse_volcano_plot, tooltip = "Target")
 saveWidget(WiT_DE3_mouse_volcano_plotly, "WiT_DE3_mouse_volcano_plotly.html", selfcontained = F, libdir = "lib")
@@ -3313,7 +3337,7 @@ WiT_C_human_volcano_plot = WiT_res_human_df %>%
 WiT_C_human_volcano_plotly = ggplotly(WiT_C_human_volcano_plot, tooltip = "Target")
 saveWidget(WiT_C_human_volcano_plotly, "WiT_C_human_volcano_plotly.html", selfcontained = F, libdir = "lib")
 
-fig_WiT_Dilution_Human = ggarrange(WiT_A_human_volcano_plot, WiT_B_human_volcano_plot, WiT_C_human_volcano_plot, labels="AUTO", ncol = 3, nrow = 1)
+fig_WiT_Dilution_Human = ggarrange(WiT_A_human_volcano_plot, WiT_B_human_volcano_plot, WiT_C_human_volcano_plot, ncol = 3, nrow = 1)
 annotate_figure(fig_WiT_Dilution_Human, top = text_grob("Wilcox Test for Proteins in SomaLogic Study: Human", size = 14))
 ggsave("fig_WiT_Dilution_Human.png")
 ```
@@ -3347,19 +3371,18 @@ WiT_boxDS_human_df = WiT_res_human_df %>% pivot_longer(names_to = "Dilution_Comp
                                                         values_to = "FC",
                                                         cols = starts_with("Diff")) %>%
                                           mutate(Dilution_Comparison = ifelse(Dilution_Comparison == "Diff_A",
-                                                                              "35uL_55uL",
+                                                                              "35uL-55uL",
                                                                               ifelse(Dilution_Comparison == "Diff_B",
-                                                                                     "35uL_55uLDiluted",
-                                                                                     "55uL_55uLDiluted")))
+                                                                                     "35uL-55uLDiluted",
+                                                                                     "55uL-55uLDiluted")))
 
 #Boxplot of intensity distributions per sample - human
 WiT_boxDS_human_plot = WiT_boxDS_human_df %>%
   ggplot(aes(x = Dilution_Comparison, y = FC, fill = Dilution_Comparison)) +
   geom_boxplot(alpha = 0.5) +
   #geom_text(aes(label = median(FC))) +
-  labs(title = "Fold Change Distribution per Dilution Comparison: Human",
-       subtitle = "eLoD Filter, Pre-Normalization",
-       x = "",
+  labs(title = "Fold Change (FC) Distribution per Dilution Comparison: Human",
+       subtitle = "",
        y = "Log2(FC)") +
   theme_bw() +
   #stat_mean_sd_text(size = 2, y.pos = 6000) +
@@ -3367,11 +3390,11 @@ WiT_boxDS_human_plot = WiT_boxDS_human_df %>%
   geom_hline(yintercept=log2(55/35), colour="purple4", linetype = "dashed") +
   theme(legend.position = "none") +
   theme(axis.text.x = element_text(vjust = 0.5, size = 10)) +
-  #theme(axis.text.x = element_blank()) +
-  theme(axis.title = element_text(vjust = 0.5, size = 12)) +
-  theme(legend.title = element_text(size = 12)) +
-  theme(title = element_text(size = 14))
-ggsave("WiT_boxDS_human_plot.png")
+  theme(axis.title.x = element_blank()) +
+  theme(axis.title = element_text(vjust = 0.5, size = 10)) +
+  theme(legend.title = element_text(size = 10)) +
+  theme(title = element_text(size = 12))
+ggsave("WiT_boxDS_human_plot.png", width = 6.2, height = 4.51, units = "in")
 WiT_boxDS_human_plot
 
 ```
@@ -4119,11 +4142,11 @@ corr_sscombo_KMC_plot = sscombo_KMC_corr_df %>%
   geom_text_repel(aes(x = AptName_SeerFeature, y = Soma_FC,label = SOMA_Sig_FC_Prot), max.overlaps = 10, size = 2) +
   geom_point(data = sscombo_KMC_corr_df, aes(x = AptName_SeerFeature, y = Seer_FC, colour = "Seer MS"), shape = "triangle", size = 1) +
   geom_text_repel(aes(x = AptName_SeerFeature, y = Seer_FC,label = Seer_Sig_FC_Prot), max.overlaps = 10, size = 2) +
-  labs(title = "SomaLogic vs. Seer Fold Change (FC)",
-       subtitle = "KMC-PDAC v. KMC Control, All Overlap IDs",
+  labs(title = "Fold Change (FC) Magnitude: SomaLogic vs. Seer",
+       subtitle = "Mouse KMC-PDAC v. KMC Control",
        x = "Protein IDs (SomaAptamer_SeerFeature)",
        y = "Log2(FC)",
-       colour = "Method") +
+       colour = "Platform") +
   theme_bw() +
   # theme(axis.text.x = element_text(angle = 90, vjust = 0.5, size = 5)) +
   ylim(-3,3) +
@@ -4164,7 +4187,7 @@ corr_sscombo_KMC_sig_plot = sscombo_KMC_corr_sig_df %>%
 ggsave("corr_sscombo_KMC_sig_plot.png")
 corr_sscombo_KMC_sig_plot
 
-#FC correlation graph verison 2 - filtered mouse
+#FC correlation graph version 2 - filtered mouse
 corr2_sscombo_KMC_plot = sscombo_KMC_corr_df %>%
   ggplot() +
   geom_point(data = sscombo_KMC_corr_df, aes(x = Soma_FC, y = Seer_FC, color = SigFC_Flag), size = 2, alpha = 0.5) +
@@ -4172,7 +4195,7 @@ corr2_sscombo_KMC_plot = sscombo_KMC_corr_df %>%
   geom_text_repel(aes(x = Soma_FC, y = Seer_FC, label = Seer_Sig_FC_Prot), max.overlaps = 20, size = 2) +
   scale_color_manual(values = c("black","turquoise3","purple2","green2")) +
   labs(title = "SomaLogic vs. Seer Fold Change (FC)",
-       subtitle = "KMC-PDAC v. KMC Control",
+       subtitle = "Mouse KMC-PDAC v. KMC Control",
        x = "Log2(Soma_FC)",
        y = "Log2(Seer_FC)") +
   theme_bw() +
@@ -4340,11 +4363,11 @@ corr_sscombo_CChuman_plot = sscombo_CChuman_corr_df %>%
   geom_text_repel(aes(x = AptName_SeerFeature, y = Soma_FC,label = SOMA_Sig_FC_Prot), max.overlaps = 10, size = 2) +
   geom_point(data = sscombo_CChuman_corr_df, aes(x = AptName_SeerFeature, y = Seer_FC, colour = "Seer MS"), shape = "triangle", size = 1) +
   geom_text_repel(aes(x = AptName_SeerFeature, y = Seer_FC,label = Seer_Sig_FC_Prot), max.overlaps = 10, size = 2) +
-  labs(title = "SomaLogic vs. Seer Fold Change (FC)",
+  labs(title = "",
        subtitle = "Human Case v. Control",
        x = "Protein IDs (SomaAptamer_SeerFeature)",
        y = "Log2(FC)",
-       colour = "Method") +
+       colour = "Platform") +
   theme_bw() +
   # theme(axis.text.x = element_text(angle = 90, vjust = 0.5, size = 5)) +
   ylim(-3,3) +
@@ -4393,7 +4416,7 @@ corr2_sscombo_CChuman_plot = sscombo_CChuman_corr_df %>%
   geom_text_repel(aes(x = Soma_FC, y = Seer_FC, label = SOMA_Sig_FC_Prot), max.overlaps = 20, size = 2) +
   geom_text_repel(aes(x = Soma_FC, y = Seer_FC, label = Seer_Sig_FC_Prot), max.overlaps = 20, size = 2) +
   scale_color_manual(values = c("black","turquoise3","purple2","green2"), drop = FALSE) +
-  labs(title = "SomaLogic vs. Seer Fold Change (FC)",
+  labs(title = "",
        subtitle = "Human Case v. Control",
        x = "Log2(Soma_FC)",
        y = "Log2(Seer_FC)") +
