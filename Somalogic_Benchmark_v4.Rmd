@@ -3976,17 +3976,18 @@ annotate_figure(fig_WiT_DE4_Human, top = text_grob("Wilcox Test: Case v. Control
 
 ```{r KMC_WiT_Mouse_MethodComparison}
 #Use biomart function to create merge column
-source("NomPivot_MouseHuman.R")
+source("NomPivot_MouseHuman_UniProtInput.R")
 #Grab SOMA aptamer seq, target, targetfullname, intensity, columns from filt_mouse df (not using normalized data for now...)
 soma_KMC_df = WiT_DE3_mouse_df %>% dplyr::select(-c(count_KMC_PDAC,count_KMC_control,data_KMC_PDAC,data_KMC_control)) %>%
                                     mutate(UniProt = ifelse(grepl("|", UniProt, fixed = TRUE), gsub("[|].*", "", UniProt), UniProt)) %>%
                                     mutate(Target = toupper(Target))
 colnames(soma_KMC_df) = c("AptName","SOMA_wt_pval","SOMA_Diff_Median","SOMA_wt_pval_BH","SOMA_Target","SOMA_TargetFullName","UniProt","SOMA_p_val_sig","SOMA_prot_sig")
-NCBI_KEGG_anno_df = nomConvert_Human_Mouse(soma_KMC_df$SOMA_Target)
-
-soma_KMC_df = merge(soma_KMC_df,NCBI_KEGG_anno_df, by.x = "SOMA_Target", by.y = "HOM_Gene", all.x = TRUE) %>% unique()
-# Filter out human/soma genes with no mouse match
-soma_KMC_filt_df = soma_KMC_df %>% filter(!is.na(MUS_Gene)) %>% mutate(MUS_Gene = tolower(MUS_Gene))
+#Perform nomenclature pivot from Soma human uniprots to corresponding mouse uniprots
+NCBI_KEGG_anno_df = nomConvert_Human_Mouse(soma_KMC_df$UniProt)
+#Merge mouse uniprots and other mouse annotations to Soma data
+soma_KMC_filt_df = merge(soma_KMC_df,NCBI_KEGG_anno_df, by.x = "UniProt", by.y = "HOM_UniProt", all.x = TRUE) %>% unique()
+#Filter out human/soma genes with no mouse UniProt match
+soma_KMC_filt_df = soma_KMC_filt_df %>% filter(!is.na(MUS_UniProt)) #%>% mutate(MUS_Gene = tolower(MUS_Gene))
 #Load Seer KMC-KMC_control data
 seer_KMC_df = read_tsv("/Users/sorianos/Code/Project_Disney/DE_KMC_PDAC_KMC_ctrl.tsv")
 seer_KMC_df = seer_KMC_df %>% dplyr::select(-c(`count_KMC - PDAC`,count_KMC_control,`data_KMC - PDAC`,data_KMC_control,diff_mean,t_pval,t_pval_BH,Significance_t,Sig_Gene_t)) %>%
@@ -3995,47 +3996,48 @@ seer_KMC_df = seer_KMC_df %>% dplyr::select(-c(`count_KMC - PDAC`,count_KMC_cont
                                   mutate(Feature = ifelse(grepl(";", feature), sub(";.*", "", feature), feature)) %>%
                                   mutate(Feature = ifelse(grepl("_", Feature), sub("_", "|", Feature), Feature)) %>%
                                   dplyr::select(-c("Protein.Group","feature"))
-# Calculate seer --> soma match overlap
-seer_KMC_filt_df = seer_KMC_df %>% filter(!is.na(Genes)) %>% dplyr::select(c(Genes)) %>% unique()
-NCBI_KEGG_Seer_anno_df = nomConvert_Mouse_Human(seer_KMC_filt_df$Genes)
-seer_KMC_filt_df = merge(seer_KMC_filt_df,NCBI_KEGG_Seer_anno_df, by.x = "Genes", by.y = "MUS_Gene", all.x = TRUE)
-colnames(seer_KMC_filt_df)[colnames(seer_KMC_filt_df) == "Genes"] = "MUS_Gene"
-seer_KMC_filt_df = seer_KMC_filt_df %>% filter(!is.na(HOM_Gene)) %>% mutate(HOM_Gene = toupper(HOM_Gene))
-seer_sscombo_KMC_df = merge(seer_KMC_filt_df,soma_KMC_df, by.x = "HOM_Gene", by.y = "SOMA_Target")
-seer_sscombo_KMC_protein_overlap = seer_sscombo_KMC_df %>% dplyr::select(c("MUS_Gene.x","HOM_Gene","MUS_GeneDescription.x","HOM_UniProt.x","MUS_UniProt.x")) %>%
-                                                            mutate(MUS_Gene.x = tolower(MUS_Gene.x)) %>%
+
+#Merge Soma and Seer df for comparison
+#seer_KMC_df = seer_KMC_df %>% filter(!is.na(Genes)) %>% mutate(Genes = tolower(Genes))
+sscombo_KMC_df = merge(seer_KMC_df,soma_KMC_filt_df, by.x = "UniProt", by.y = "MUS_UniProt") #Intersecting UniProt IDs btwn Soma + Seer
+colnames(sscombo_KMC_df)[colnames(sscombo_KMC_df) == "UniProt"] = "MUS_UniProt"
+colnames(sscombo_KMC_df)[colnames(sscombo_KMC_df) == "UniProt.y"] = "HOM_UniProt"
+colnames(sscombo_KMC_df)[colnames(sscombo_KMC_df) == "Genes"] = "Seer_Genes"
+colnames(sscombo_KMC_df)[colnames(sscombo_KMC_df) == "SOMA_Target"] = "SOMA_Genes"
+
+#Calculate soma --> seer protein overlap
+sscombo_KMC_protID_overlap = sscombo_KMC_df %>% dplyr::select(c("MUS_UniProt","Seer_Genes","MUS_Gene","HOM_UniProt","SOMA_Genes","HOM_Gene")) %>% unique()
+#Export table of overlap proteins
+write_tsv(sscombo_KMC_protID_overlap,"protID_overlap_KMC_SomatoSeer.tsv")
+sscombo_KMC_sig_df = sscombo_KMC_df %>% filter(Significance_wt == "Y")
+sigprotID_KMC_overlap = sscombo_KMC_sig_df %>% dplyr::select(c("MUS_UniProt","Seer_Genes","MUS_Gene","HOM_UniProt","SOMA_Genes","HOM_Gene")) %>% unique() #%>% nrow()
+
+#Calculate seer --> soma protein overlap
+#seer_KMC_filt_df = seer_KMC_df %>% filter(!is.na(UniProt)) #%>% dplyr::select(c(Genes)) %>% unique()
+NCBI_KEGG_Seer_anno_df = nomConvert_Mouse_Human(seer_KMC_df$UniProt)
+seer_KMC_filt_df = merge(seer_KMC_df,NCBI_KEGG_Seer_anno_df, by.x = "UniProt", by.y = "MUS_UniProt", all.x = TRUE)
+colnames(seer_KMC_filt_df)[colnames(seer_KMC_filt_df) == "Genes"] = "Seer_Genes"
+colnames(seer_KMC_filt_df)[colnames(seer_KMC_filt_df) == "UniProt"] = "MUS_UniProt"
+seer_KMC_filt_df = seer_KMC_filt_df %>% filter(!is.na(HOM_UniProt)) #%>% mutate(HOM_Gene = toupper(HOM_Gene))
+seer_sscombo_KMC_df = merge(seer_KMC_filt_df,soma_KMC_df, by.x = "HOM_UniProt", by.y = "UniProt")
+colnames(seer_sscombo_KMC_df)[colnames(seer_sscombo_KMC_df) == "SOMA_Target"] = "SOMA_Genes"
+seer_sscombo_KMC_protein_overlap = seer_sscombo_KMC_df %>% dplyr::select(c("MUS_UniProt","Seer_Genes","MUS_Gene","HOM_UniProt","SOMA_Genes","HOM_Gene")) %>%
                                                             unique() #%>% nrow()
-colnames(seer_sscombo_KMC_protein_overlap) = c("MUS_Gene","HOM_Gene","GeneDescription","HOM_UniProt","MUS_UniProt")
+#Export table of seer --> soma overlap proteins
+write_tsv(seer_sscombo_KMC_protein_overlap,"protID_overlap_KMC_SeertoSoma.tsv")
 #Find number of protein IDs (removing NP duplicates) in seer KMC data
 seer_KMC_proteins = seer_KMC_df %>% dplyr::select(c(Genes,UniProt)) %>% unique() %>% nrow()
 #Find number of protein IDs (removing NP duplicates) in seer KMC data
 sig_seer_KMC_proteins = seer_KMC_df %>% filter(Significance_wt == "Y") %>% dplyr::select(c(Genes,UniProt)) %>% unique() %>% nrow()
 
-#Merge Soma and Seer df for comparison
-seer_KMC_df = seer_KMC_df %>% filter(!is.na(Genes)) %>% mutate(Genes = tolower(Genes))
-sscombo_KMC_df = merge(seer_KMC_df,soma_KMC_filt_df, by.x = "Genes", by.y = "MUS_Gene") #Intersecting UniProt IDs btwn Soma + Seer
-colnames(sscombo_KMC_df)[colnames(sscombo_KMC_df) == "UniProt.x"] = "Seer_UniProt"
-colnames(sscombo_KMC_df)[colnames(sscombo_KMC_df) == "UniProt.y"] = "SOMA_UniProt"
-
-#Generate table of protein overlaps (removing NP replicates)
-protID_overlap = sscombo_KMC_df %>% dplyr::select(c(Genes,SOMA_Target,SOMA_TargetFullName,SOMA_UniProt,Seer_UniProt)) %>% unique()
-#protID_gene_overlap = sscombo_KMC_df %>% dplyr::select(c(Genes,SOMA_Target,SOMA_TargetFullName)) %>% unique()
-colnames(protID_overlap) = c("MUS_Target","SOMA_HUM_Target","SOMA_TargetFullName","SOMA_UniProt","Seer_UniProt")
-#Export table of overlap proteins
-write_tsv(protID_overlap,"protID_overlap_SomatoSeer.tsv")
-
-sscombo_KMC_sig_df = sscombo_KMC_df %>% filter(Significance_wt == "Y")
-sigprotID_KMC_overlap = sscombo_KMC_sig_df %>% dplyr::select(c(Genes)) %>% unique() #%>% nrow()
-
 #Check for difference btwn soma --> seer and seer --> soma overlaps
-colnames(protID_overlap) = c("MUS_Gene","HOM_Gene","GeneDescription","HOM_UniProt","MUS_UniProt")
-overlap1 = protID_overlap %>% dplyr::select(c("MUS_Gene","HOM_Gene"))
-overlap2 = seer_sscombo_KMC_protein_overlap %>% dplyr::select(c("MUS_Gene","HOM_Gene"))
-overlap_method_diff = dplyr::setdiff(overlap1,overlap2)
-overlap_method_diff2 = merge(protID_overlap,seer_sscombo_KMC_protein_overlap, by = "MUS_Gene", all = TRUE)
+# overlap_SomatoSeer = sscombo_KMC_protID_overlap %>% dplyr::select(c("MUS_UniProt","HOM_UniProt"))
+# overlap_SeertoSoma = seer_sscombo_KMC_protein_overlap %>% dplyr::select(c("MUS_UniProt","HOM_UniProt"))
+# overlap_method_diff = dplyr::setdiff(overlap_SomatoSeer,overlap_SeertoSoma)
+overlap_method_diff2 = merge(sscombo_KMC_protID_overlap,seer_sscombo_KMC_protein_overlap, by = "MUS_UniProt", all = TRUE)
 num_overlap_prot_Soma_unique = overlap_method_diff2 %>% filter(is.na(HOM_Gene.y)) %>% nrow()
 num_overlap_prot_Seer_unique = overlap_method_diff2 %>% filter(is.na(HOM_Gene.x)) %>% nrow()
-summary(comparedf(overlap1,overlap2))
+summary(comparedf(sscombo_KMC_protID_overlap,seer_sscombo_KMC_protein_overlap))
 ```
 
 ```{r KMC_WiT_Mouse_Alt_MethodComparison, include = FALSE}

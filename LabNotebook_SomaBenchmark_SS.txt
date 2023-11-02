@@ -780,12 +780,45 @@ Seer Proteograph PAS: Pending (requires unique login)
 * Both nomenclature functions are working again! yay! (OHSU must have fixed the internet connectivity problem...?)
 * Updated GitHub repo w/ updated code, nomenclature fxn, LB, and paper (just in case)
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+30OCT2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+* Created second version of nomenclature pivot functions - made changes to use UniProt IDs instead of gene names
+  ** Works with test case human to mouse
+  ** Works with test case mouse to human
+  ** Errors during KEGG stuff - found this that may fix the problem: https://stackoverflow.com/questions/77311991/biopython-kegg-rest-keeps-reporting-http-error-403-forbidden
+    *** And this: https://www.kegg.jp/kegg/rest/keggapi.html
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+31OCT2023 - (\^^/)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+* KEGG submissions of all ids in one URL or one url per id both result in HTTP 403 errors
+* Going to try 7 submissions of 100ish, if that doesn't work then remove KEGG part
+* Using the link to get to KO IDs does appear to work for 100ish IDs at once (7 splits for current human to mouse 668 proteins)
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+01NOV2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-
-
+* Redesigned human --> mouse nomenclature pivot using altered KEGG submission method is working:
+  ** 7545 aptamers, 6356 unique human UniProts submitted --> 9909 unique MUS UniProt results
+  ** 202 human submissions without a mouse uniprot found
+    *** test_df = NCBI_KEGG_anno_df %>% filter(is.na(MUS_UniProt)) %>% nrow()
+  ** Keeping HOM_KEGGID column as a flag for which rows need to use KEGG for the pivot (as opposed to just NCBI)
+* Switched v4 main code to use UniProt for Soma --> Seer merge instead of gene names
+  ** NEW protein overlap numbers - by UniProt now, using new KEGG query method:
+    *** Total overlap: 818
+    *** Seer-sig overlap: 101
+* Switched v4 main code to use UniProt for Seer --> Soma merge instead of gene names
+  ** NEW protein overlap numbers - by UniProt now, using new KEGG query method:
+    *** Total overlap: 833
+    *** Seer-sig overlap: 
+* Overlap assessment:
+  ** Proteins unique to Soma --> Seer pivot: 19
+  ** Proteins unique to Seer --> Soma pivot: 23
+* Uploaded updated scripts to github
 
 
 
