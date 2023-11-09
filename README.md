@@ -1,2 +1,5 @@
 # SomaLogic_Benchmark
-2023 UO BGMP/OHSU CEDAR project to benchmark the performance of SomaLogic SomaScan against that of Seer Proteograph MS for proteomic analysis. 
+
+This repository contains all custom scripts created during the SomaLogic Benchmark project as part of the University of Oregon Bioinformatics and Genomics Masters Program (UO BGMP) internship at Oregon Health & Science University Cancer Early Detection Advanced Research Center (OHSU CEDAR).
+
+Project Goal: To benchmark the performance of SomaLogic SomaScan (7596 aptamer panel) against that of Seer Proteograph MS for proteomic analysis of murine and human data.
