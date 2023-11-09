@@ -386,7 +386,7 @@ aptcov_filtmouse_plot = aptcount_filt_mouse_df %>%
   ggplot(aes(x = reorder(Sample_ID, row_ID), y = numSigApt, colour = SampleType)) +
   geom_point(size = 1) +
   labs(title = "Mouse - Normalized",
-       x = "",
+       x = "Sample ID",
        y = "Count") +
   theme(legend.position = "none") +
   theme_bw() +
@@ -395,10 +395,11 @@ aptcov_filtmouse_plot = aptcount_filt_mouse_df %>%
   geom_hline(yintercept=6379, colour = "red") + #Number of high/medium human aptamers in mouse (expected minimum apt count per mouse sample) = 6379
   #theme(axis.text.x = element_text(angle = 90, vjust = 0.5, size = 5)) +
   theme(axis.text.x = element_blank()) +
-  theme(axis.title = element_text(vjust = 0.5, size = 10)) +
-  theme(title = element_text(size = 12)) +
-  theme(legend.title = element_text(size = 10)) +
-  theme(legend.text = element_text(size = 8)) +
+  theme(axis.text.y = element_text(size = 12)) +
+  theme(axis.title = element_text(vjust = 0.5, size = 14)) +
+  theme(title = element_text(size = 14)) +
+  theme(legend.title = element_text(size = 14)) +
+  theme(legend.text = element_text(size = 12)) +
   scale_colour_manual(values=c("#F8766D", "#A3A500", "#00BF7D", "#00B0F6", "#E76BF3"), drop = FALSE)
 #ggsave("aptcov_filtmouse_plot.png")
 
@@ -407,7 +408,7 @@ aptcov_filthuman_plot = aptcount_filt_human_df %>%
   ggplot(aes(x = reorder(Sample_ID, row_ID), y = numSigApt,color = SampleType)) +
   geom_point(size = 1) +
   labs(title = "Human - Normalized",
-       x = "Sample_ID",
+       x = "Sample ID",
        y = "Count") +
   theme(legend.position = "none") +
   theme_bw() +
@@ -415,10 +416,11 @@ aptcov_filthuman_plot = aptcount_filt_human_df %>%
   geom_hline(yintercept=length(eLoD_human_df$AptName), colour = "blue") + #Max number of aptamers = 7596
   #theme(axis.text.x = element_text(angle = 90, vjust = 0.5, size = 5)) +
   theme(axis.text.x = element_blank()) +
-  theme(axis.title = element_text(vjust = 0.5, size = 10)) +
-  theme(title = element_text(size = 12)) +
-  theme(legend.title = element_text(size = 10)) +
-  theme(legend.text = element_text(size = 8)) +
+  theme(axis.text.y = element_text(size = 12)) +
+  theme(axis.title = element_text(vjust = 0.5, size = 14)) +
+  theme(title = element_text(size = 14)) +
+  theme(legend.title = element_text(size = 14)) +
+  theme(legend.text = element_text(size = 12)) +
   scale_colour_manual(values=c("#F8766D", "#A3A500", "#00BF7D", "#00B0F6", "#E76BF3"), drop = FALSE)
 #ggsave("aptcov_filthuman_plot.png")
 
@@ -427,7 +429,7 @@ aptcov_filthuman_plot = aptcount_filt_human_df %>%
 ```{r Plot_eLoD_Filter_AptCount}
 #Plot filtered aptamer counts per sample
 fig_eLoDFilt_AptCount = ggarrange(aptcov_filtmouse_plot, aptcov_filthuman_plot, labels="AUTO", ncol = 1, nrow = 2, common.legend = TRUE, legend = "right")
-annotate_figure(fig_eLoDFilt_AptCount, top = text_grob("Aptamer Count per Sample", size = 16))
+annotate_figure(fig_eLoDFilt_AptCount, top = text_grob("Aptamer Count per Sample", size = 18))
 ggsave("fig_eLoDFilt_AptCount.png", width = 7.29, height = 6.5, units = "in")
 ```
 
@@ -1095,10 +1097,11 @@ aptamer_CVgroup_mouse_plot = aptamer_CVgroup_mouse_df %>%
   stat_mean_sd_text(y.pos = 90, size = 3, angle=90) +
   theme(axis.title.x = element_blank()) +
   theme(axis.text.x = element_blank()) +
-  theme(axis.title = element_text(size = 10)) +
-  theme(title = element_text(size = 12)) +
-  theme(legend.title = element_text(size = 10)) +
-  theme(legend.text = element_text(size = 8)) 
+  theme(axis.text.y = element_text(size = 12)) +
+  theme(axis.title = element_text(size = 14)) +
+  theme(title = element_text(size = 14)) +
+  theme(legend.title = element_text(size = 14)) +
+  theme(legend.text = element_text(size = 12)) 
 ggsave("aptamer_CVgroup_mouse_plot.png", width = 7.29, height = 4.51, units = "in")
 aptamer_CVgroup_mouse_plot
 ```
@@ -1248,10 +1251,11 @@ aptamer_CVgroup_human_plot = aptamer_CVgroup_human_df %>%
   stat_mean_sd_text(y.pos = 90, size = 3, angle=90) +
   theme(axis.title.x = element_blank()) +
   theme(axis.text.x = element_blank()) +
-  theme(axis.title = element_text(size = 10)) +
-  theme(title = element_text(size = 12)) +
-  theme(legend.title = element_text(size = 10)) +
-  theme(legend.text = element_text(size = 8)) 
+  theme(axis.text.y = element_text(size = 12)) +
+  theme(axis.title = element_text(size = 14)) +
+  theme(title = element_text(size = 14)) +
+  theme(legend.title = element_text(size = 14)) +
+  theme(legend.text = element_text(size = 12)) 
 ggsave("aptamer_CVgroup_human_plot.png", width = 7.29, height = 4.51, units = "in")
 aptamer_CVgroup_human_plot
 ```
@@ -1333,7 +1337,7 @@ aptamer_CVgroup_human_alt_plot
 ```{r Plot_eLoD_Filter_AptCount}
 #Plot filtered aptamer counts per sample
 fig_Combo_CVplots = ggarrange(aptamer_CVgroup_mouse_plot, aptamer_CVgroup_human_plot, labels=c("C","D"), ncol = 1, nrow = 2)
-annotate_figure(fig_Combo_CVplots, top = text_grob("Aptamer CV Distribution per Condition", size = 16))
+annotate_figure(fig_Combo_CVplots, top = text_grob("Aptamer CV Distribution per Condition", size = 18))
 ggsave("fig_Combo_CVplots.png", width = 7.29, height = 6.5)
 ```
 
@@ -1450,13 +1454,17 @@ WiT_A_mouse_volcano_plot = WiT_res_mouse_df %>%
   geom_text_repel(aes(label = proteins_A_sig), max.overlaps = 20) +
   scale_color_manual(values = c("black", "red")) +
   labs(title = "",
-       x = "Log2(35uL-55uL)",
+       x = "Log2(FC)",
        y = "-log10(p-value)",
        subtitle = "35uL vs. 55uL") +
   theme_bw() +
   xlim(-2,2) +
   theme(legend.position = "none") +
-  theme(plot.subtitle = element_text(face = "italic"))
+  theme(plot.subtitle = element_text(face = "italic")) +
+  theme(axis.text.x = element_text(vjust = 0.5, size = 12)) +
+  theme(axis.text.y = element_text(vjust = 0.5, size = 12)) +
+  theme(axis.title = element_text(vjust = 0.5, size = 14)) +
+  theme(title = element_text(size = 14))
 #ggsave("WiT_A_mouse_volcano_plot.png")
 # WiT_A_mouse_volcano_plot
 
@@ -1470,13 +1478,17 @@ WiT_B_mouse_volcano_plot = WiT_res_mouse_df %>%
   geom_text_repel(aes(label = proteins_B_sig), max.overlaps = 20) +
   scale_color_manual(values = c("black", "red")) +
   labs(title = "",
-       x = "Log2(35uL-55uL_Diluted)",
+       x = "Log2(FC)",
        y = "",
-       subtitle = "35uL vs. 55uL Diluted") +
+       subtitle = "35uL vs. 55uL D") +
   theme_bw() +
   xlim(-2,2) +
   theme(legend.position = "none") +
-  theme(plot.subtitle = element_text(face = "italic"))
+  theme(plot.subtitle = element_text(face = "italic")) +
+  theme(axis.text.x = element_text(vjust = 0.5, size = 12)) +
+  theme(axis.text.y = element_text(vjust = 0.5, size = 12)) +
+  theme(axis.title = element_text(vjust = 0.5, size = 14)) +
+  theme(title = element_text(size = 14))
 #ggsave("WiT_B_mouse_volcano_plot.png")
 # WiT_B_mouse_volcano_plot
 
@@ -1490,13 +1502,17 @@ WiT_C_mouse_volcano_plot = WiT_res_mouse_df %>%
   geom_text_repel(aes(label = proteins_C_sig), max.overlaps = 20) +
   scale_color_manual(values = c("black", "red")) +
   labs(title = "",
-       x = "Log2(55uL-55uL_Diluted)",
+       x = "Log2(FC)",
        y = "",
-       subtitle = "55uL vs. 55uL Diluted") +
+       subtitle = "55uL vs. 55uL D") +
   theme_bw() +
   xlim(-2,2) +
   theme(legend.position = "none") +
-  theme(plot.subtitle = element_text(face = "italic"))
+  theme(plot.subtitle = element_text(face = "italic")) +
+  theme(axis.text.x = element_text(vjust = 0.5, size = 12)) +
+  theme(axis.text.y = element_text(vjust = 0.5, size = 12)) +
+  theme(axis.title = element_text(vjust = 0.5, size = 14)) +
+  theme(title = element_text(size = 14))
 #ggsave("WiT_C_mouse_volcano_plot.png")
 # WiT_C_mouse_volcano_plot
 
@@ -1504,8 +1520,8 @@ WiT_C_mouse_volcano_plotly = ggplotly(WiT_C_mouse_volcano_plot, tooltip = "Targe
 saveWidget(WiT_C_mouse_volcano_plotly, "WiT_C_mouse_volcano_plotly.html", selfcontained = F, libdir = "lib")
 
 fig_WiT_Dilution_Mouse = ggarrange(WiT_A_mouse_volcano_plot, WiT_B_mouse_volcano_plot, WiT_C_mouse_volcano_plot, ncol = 3, nrow = 1)
-annotate_figure(fig_WiT_Dilution_Mouse, top = text_grob("Wilcox Test for Proteins in SomaLogic Study: Mouse", size = 14))
-ggsave("fig_WiT_Dilution_Mouse.png")
+annotate_figure(fig_WiT_Dilution_Mouse, top = text_grob("SomaLogic Murine DE: Dilution Set", size = 18))
+ggsave("fig_WiT_Dilution_Mouse.png", width = 6, height = 3, units = "in")
 ```
 
 \newline
@@ -1539,15 +1555,15 @@ WiT_boxDS_mouse_df = WiT_res_mouse_df %>% pivot_longer(names_to = "Dilution_Comp
                                           mutate(Dilution_Comparison = ifelse(Dilution_Comparison == "Diff_A",
                                                                               "35uL-55uL",
                                                                               ifelse(Dilution_Comparison == "Diff_B",
-                                                                                     "35uL-55uLDiluted",
-                                                                                     "55uL-55uLDiluted")))
+                                                                                     "35uL-55uL_D",
+                                                                                     "55uL-55uL_D")))
 
 #Boxplot of intensity distributions per sample - mouse
 WiT_boxDS_mouse_plot = WiT_boxDS_mouse_df %>%
   ggplot(aes(x = Dilution_Comparison, y = FC, fill = Dilution_Comparison)) +
   geom_boxplot(alpha = 0.5) +
   #geom_text(aes(label = median(FC))) +
-  labs(title = "Fold Change (FC) Distribution per Dilution Comparison: Mouse",
+  labs(title = "Dilution FC Distribution: Mouse",
        subtitle = "",
        y = "Log2(FC)") +
   theme_bw() +
@@ -1555,11 +1571,12 @@ WiT_boxDS_mouse_plot = WiT_boxDS_mouse_df %>%
   #ylim(0,6000) +
   geom_hline(yintercept=log2(55/35), colour="purple4", linetype = "dashed") +
   theme(legend.position = "none") +
-  theme(axis.text.x = element_text(vjust = 0.5, size = 10)) +
+  theme(axis.text.x = element_text(vjust = 0.5, size = 12)) +
+  theme(axis.text.y = element_text(vjust = 0.5, size = 12)) +
   theme(axis.title.x = element_blank()) +
-  theme(axis.title = element_text(vjust = 0.5, size = 10)) +
-  theme(title = element_text(size = 12))
-ggsave("WiT_boxDS_mouse_plot.png", width = 6, height = 4.51, units = "in")
+  theme(axis.title = element_text(vjust = 0.5, size = 14)) +
+  theme(title = element_text(size = 14))
+ggsave("WiT_boxDS_mouse_plot.png", width = 4, height = 3, units = "in")
 WiT_boxDS_mouse_plot
 ```
 
@@ -2503,12 +2520,15 @@ WiT_DE3_mouse_volcano_plot = WiT_DE3_mouse_df %>%
   geom_vline(xintercept = -2, linetype = "dashed", color = "red") +
   geom_text_repel(aes(label = proteins_sig), max.overlaps = 20) +
   scale_color_manual(values = c("black", "red")) +
-  labs(title = "Volcano Plot: KMC-PDAC v. KMC Control (Mouse)",
+  labs(title = "SomaLogic Murine DE: KMC-PDAC v. KMC Control",
        x = "Log2(KMC-PDAC-KMC_Control)",
-       y = "-Log10(pvalue)",
-       subtitle = "Wilcox Test") +
+       y = "-Log10(pvalue)") +
   theme_bw() +
   xlim(-5,5) +
+  theme(axis.text.x = element_text(vjust = 0.5, size = 14)) +
+  theme(axis.text.y = element_text(vjust = 0.5, size = 14)) +
+  theme(axis.title = element_text(vjust = 0.5, size = 16)) +
+  theme(title = element_text(size = 16)) +
   theme(legend.position = "none") +
   theme(plot.subtitle = element_text(face = "italic"))
 ggsave("WiT_DE3_mouse_volcano_plot.png")
@@ -3284,13 +3304,17 @@ WiT_A_human_volcano_plot = WiT_res_human_df %>%
   geom_text_repel(aes(label = proteins_A_sig), max.overlaps = 20) +
   scale_color_manual(values = c("black", "red")) +
   labs(title = "",
-       x = "Log2(35uL-55uL)",
+       x = "Log2(FC)",
        y = "-log10(p-value)",
        subtitle = "35uL vs. 55uL") +
   theme_bw() +
   xlim(-5,5) +
   theme(legend.position = "none") +
-  theme(plot.subtitle = element_text(face = "italic"))
+  theme(plot.subtitle = element_text(face = "italic")) +
+  theme(axis.text.x = element_text(vjust = 0.5, size = 12)) +
+  theme(axis.text.y = element_text(vjust = 0.5, size = 12)) +
+  theme(axis.title = element_text(vjust = 0.5, size = 14)) +
+  theme(title = element_text(size = 14))
 #ggsave("WiT_A_human_volcano_plot.png")
 # WiT_A_human_volcano_plot
 
@@ -3304,13 +3328,17 @@ WiT_B_human_volcano_plot = WiT_res_human_df %>%
   geom_text_repel(aes(label = proteins_B_sig), max.overlaps = 20) +
   scale_color_manual(values = c("black", "red")) +
   labs(title = "",
-       x = "Log2(35uL-55uL_Diluted)",
+       x = "Log2(FC)",
        y = "",
-       subtitle = "35uL vs. 55uL Diluted") +
+       subtitle = "35uL vs. 55uL D") +
   theme_bw() +
   xlim(-5,5) +
   theme(legend.position = "none") +
-  theme(plot.subtitle = element_text(face = "italic"))
+  theme(plot.subtitle = element_text(face = "italic")) +
+  theme(axis.text.x = element_text(vjust = 0.5, size = 12)) +
+  theme(axis.text.y = element_text(vjust = 0.5, size = 12)) +
+  theme(axis.title = element_text(vjust = 0.5, size = 14)) +
+  theme(title = element_text(size = 14))
 #ggsave("WiT_B_human_volcano_plot.png")
 # WiT_B_human_volcano_plot
 
@@ -3324,13 +3352,17 @@ WiT_C_human_volcano_plot = WiT_res_human_df %>%
   geom_text_repel(aes(label = proteins_C_sig), max.overlaps = 20) +
   scale_color_manual(values = c("black", "red")) +
   labs(title = "",
-       x = "Log2(55uL-55uL_Diluted)",
+       x = "Log2(FC)",
        y = "",
-       subtitle = "55uL vs. 55uL Diluted") +
+       subtitle = "55uL vs. 55uL D") +
   theme_bw() +
   xlim(-5,5) +
   theme(legend.position = "none") +
-  theme(plot.subtitle = element_text(face = "italic"))
+  theme(plot.subtitle = element_text(face = "italic")) +
+  theme(axis.text.x = element_text(vjust = 0.5, size = 12)) +
+  theme(axis.text.y = element_text(vjust = 0.5, size = 12)) +
+  theme(axis.title = element_text(vjust = 0.5, size = 14)) +
+  theme(title = element_text(size = 14))
 #ggsave("WiT_C_human_volcano_plot.png")
 # WiT_C_human_volcano_plot
 
@@ -3338,8 +3370,8 @@ WiT_C_human_volcano_plotly = ggplotly(WiT_C_human_volcano_plot, tooltip = "Targe
 saveWidget(WiT_C_human_volcano_plotly, "WiT_C_human_volcano_plotly.html", selfcontained = F, libdir = "lib")
 
 fig_WiT_Dilution_Human = ggarrange(WiT_A_human_volcano_plot, WiT_B_human_volcano_plot, WiT_C_human_volcano_plot, ncol = 3, nrow = 1)
-annotate_figure(fig_WiT_Dilution_Human, top = text_grob("Wilcox Test for Proteins in SomaLogic Study: Human", size = 14))
-ggsave("fig_WiT_Dilution_Human.png")
+annotate_figure(fig_WiT_Dilution_Human, top = text_grob("SomaLogic Human DE: Dilution Set", size = 18))
+ggsave("fig_WiT_Dilution_Human.png", width = 6, height = 3, units = "in")
 ```
 
 \newline
@@ -3373,15 +3405,15 @@ WiT_boxDS_human_df = WiT_res_human_df %>% pivot_longer(names_to = "Dilution_Comp
                                           mutate(Dilution_Comparison = ifelse(Dilution_Comparison == "Diff_A",
                                                                               "35uL-55uL",
                                                                               ifelse(Dilution_Comparison == "Diff_B",
-                                                                                     "35uL-55uLDiluted",
-                                                                                     "55uL-55uLDiluted")))
+                                                                                     "35uL-55uL_D",
+                                                                                     "55uL-55uL_D")))
 
 #Boxplot of intensity distributions per sample - human
 WiT_boxDS_human_plot = WiT_boxDS_human_df %>%
   ggplot(aes(x = Dilution_Comparison, y = FC, fill = Dilution_Comparison)) +
   geom_boxplot(alpha = 0.5) +
   #geom_text(aes(label = median(FC))) +
-  labs(title = "Fold Change (FC) Distribution per Dilution Comparison: Human",
+  labs(title = "Dilution FC Distribution: Human",
        subtitle = "",
        y = "Log2(FC)") +
   theme_bw() +
@@ -3389,12 +3421,11 @@ WiT_boxDS_human_plot = WiT_boxDS_human_df %>%
   #ylim(0,6000) +
   geom_hline(yintercept=log2(55/35), colour="purple4", linetype = "dashed") +
   theme(legend.position = "none") +
-  theme(axis.text.x = element_text(vjust = 0.5, size = 10)) +
+  theme(axis.text.x = element_text(vjust = 0.5, size = 12)) +
   theme(axis.title.x = element_blank()) +
-  theme(axis.title = element_text(vjust = 0.5, size = 10)) +
-  theme(legend.title = element_text(size = 10)) +
-  theme(title = element_text(size = 12))
-ggsave("WiT_boxDS_human_plot.png", width = 6.2, height = 4.51, units = "in")
+  theme(axis.title = element_text(vjust = 0.5, size = 14)) +
+  theme(title = element_text(size = 14))
+ggsave("WiT_boxDS_human_plot.png", width = 4, height = 3, units = "in")
 WiT_boxDS_human_plot
 
 ```
@@ -4025,19 +4056,32 @@ seer_sscombo_KMC_protein_overlap = seer_sscombo_KMC_df %>% dplyr::select(c("MUS_
                                                             unique() #%>% nrow()
 #Export table of seer --> soma overlap proteins
 write_tsv(seer_sscombo_KMC_protein_overlap,"protID_overlap_KMC_SeertoSoma.tsv")
+seer_sscombo_KMC_sig_df = seer_sscombo_KMC_df %>% filter(Significance_wt == "Y")
+seer_sigprotID_KMC_overlap = seer_sscombo_KMC_sig_df %>% dplyr::select(c("MUS_UniProt","Seer_Genes","MUS_Gene","HOM_UniProt","SOMA_Genes","HOM_Gene")) %>% unique() #%>% nrow()
 #Find number of protein IDs (removing NP duplicates) in seer KMC data
 seer_KMC_proteins = seer_KMC_df %>% dplyr::select(c(Genes,UniProt)) %>% unique() %>% nrow()
 #Find number of protein IDs (removing NP duplicates) in seer KMC data
 sig_seer_KMC_proteins = seer_KMC_df %>% filter(Significance_wt == "Y") %>% dplyr::select(c(Genes,UniProt)) %>% unique() %>% nrow()
 
-#Check for difference btwn soma --> seer and seer --> soma overlaps
-# overlap_SomatoSeer = sscombo_KMC_protID_overlap %>% dplyr::select(c("MUS_UniProt","HOM_UniProt"))
-# overlap_SeertoSoma = seer_sscombo_KMC_protein_overlap %>% dplyr::select(c("MUS_UniProt","HOM_UniProt"))
-# overlap_method_diff = dplyr::setdiff(overlap_SomatoSeer,overlap_SeertoSoma)
-overlap_method_diff2 = merge(sscombo_KMC_protID_overlap,seer_sscombo_KMC_protein_overlap, by = "MUS_UniProt", all = TRUE)
-num_overlap_prot_Soma_unique = overlap_method_diff2 %>% filter(is.na(HOM_Gene.y)) %>% nrow()
-num_overlap_prot_Seer_unique = overlap_method_diff2 %>% filter(is.na(HOM_Gene.x)) %>% nrow()
+#Check for difference btwn soma --> seer and seer --> soma overlaps - all Seer/SOMA and MUS/HOM labels
+#Proteins unique to SOMA --> Seer overlap
+overlap_method_diff_SoSe = dplyr::setdiff(sscombo_KMC_protID_overlap,seer_sscombo_KMC_protein_overlap)
+#Proteins unique to Seer --> SOMA overlap
+overlap_method_diff_SeSo = dplyr::setdiff(seer_sscombo_KMC_protein_overlap, sscombo_KMC_protID_overlap)
+#Proteins shared in both overlap sets (SOMA --> Seer & Seer --> SOMA intersect)
+overlap_method_intersect = dplyr::intersect(sscombo_KMC_protID_overlap,seer_sscombo_KMC_protein_overlap)
+overlap_method_intersect = overlap_method_intersect %>% mutate(UniProts_MUS_HOM = paste(MUS_UniProt,HOM_UniProt,sep = "_"))
 summary(comparedf(sscombo_KMC_protID_overlap,seer_sscombo_KMC_protein_overlap))
+
+#Check for diff btwn soma --> seer and seer --> soma overlaps - UniProt labels only
+# sscombo_KMC_protID_overlap_UPs = sscombo_KMC_protID_overlap %>% dplyr::select(c("MUS_UniProt","HOM_UniProt"))
+# seer_sscombo_KMC_protein_overlap_UPs = seer_sscombo_KMC_protein_overlap %>% dplyr::select(c("MUS_UniProt","HOM_UniProt"))
+# #Proteins unique to SOMA --> Seer overlap
+# overlap_method_diff_SoSe_UPs = dplyr::setdiff(sscombo_KMC_protID_overlap_UPs,seer_sscombo_KMC_protein_overlap_UPs)
+# #Proteins unique to Seer --> SOMA overlap
+# overlap_method_diff_SeSo_UPs = dplyr::setdiff(seer_sscombo_KMC_protein_overlap_UPs, sscombo_KMC_protID_overlap_UPs)
+# #Proteins shared in both overlap sets (SOMA --> Seer & Seer --> SOMA intersect)
+# overlap_method_intersect_UPs = dplyr::intersect(sscombo_KMC_protID_overlap_UPs,seer_sscombo_KMC_protein_overlap_UPs)
 ```
 
 ```{r KMC_WiT_Mouse_Alt_MethodComparison, include = FALSE}
@@ -4085,11 +4129,13 @@ summary(comparedf(sscombo_KMC_protID_overlap,seer_sscombo_KMC_protein_overlap))
 
 ```{r KMC_WiT_Mouse_Corr}
 #Calculate per row (single protein Soma vs. Seer NP) correlation coefficient (r) for Soma and Seer fold changes
-# soma_FC = sscombo_KMC_df$SOMA_Diff_Median
-# seer_FC = sscombo_KMC_df$diff_median
-sscombo_KMC_corr_df = sscombo_KMC_df %>% rowwise() %>% mutate(data_FC = list(c(SOMA_Diff_Median,diff_median))) %>%
+
+sscombo_KMC_corr_df = sscombo_KMC_df %>% mutate(UniProts_MUS_HOM = paste(MUS_UniProt,HOM_UniProt,sep = "_")) %>%
+                                          #ONLY KEEP OVERLAP PROTEINS IN INTERSECT OF BOTH DIRECTION PIVOTS (767 unique)
+                                          filter(UniProts_MUS_HOM %in% overlap_method_intersect$UniProts_MUS_HOM) %>%
+                                          rowwise() %>% mutate(data_FC = list(c(SOMA_Diff_Median,diff_median))) %>%
                                           mutate(FC_SD = sd(data_FC), FC_CV = 100*sqrt(2^(log(2)*(FC_SD^2))-1)) %>%
-                                          mutate(AptName_SOMATarget = paste(AptName, SOMA_Target, sep = "|")) %>%
+                                          mutate(AptName_SOMATarget = paste(AptName, SOMA_Genes, sep = "|")) %>%
                                           mutate(AptName_SeerFeature = paste(AptName_SOMATarget, Feature, sep = "_")) %>%
                                           ungroup() %>%
                                           mutate(SOMA_Sig_FC_Prot = ifelse(SOMA_Diff_Median >= 2 | SOMA_Diff_Median <= -2, AptName_SeerFeature, NA)) %>%
@@ -4104,19 +4150,23 @@ sscombo_KMC_corr_df = sscombo_KMC_df %>% rowwise() %>% mutate(data_FC = list(c(S
 colnames(sscombo_KMC_corr_df)[colnames(sscombo_KMC_corr_df) == "SOMA_Diff_Median"] = "Soma_FC"
 colnames(sscombo_KMC_corr_df)[colnames(sscombo_KMC_corr_df) == "diff_median"] = "Seer_FC"
 
+#Seer-sig proteins in intersect-filtered KMC overlap
+sigprotID_sscombo_KMC_intersectfilt_df = sscombo_KMC_corr_df %>% filter(Significance_wt == "Y")
+sigprotID_sscombo_KMC_intersectfilt = sigprotID_sscombo_KMC_intersectfilt_df$UniProts_MUS_HOM %>% unique() %>% length()
+
 #Correlation calculation
 cor_sscombo_KMC = cor(sscombo_KMC_corr_df$Soma_FC,sscombo_KMC_corr_df$Seer_FC,method="pearson")
 
 #Adding in mouse aptamer quality terms to KMC corr df
 subset_apt_anno_mouse_df = combined_apt_anno_mouse_df %>% dplyr::select(AptName,Quality)
 sscombo_KMC_corr_df = merge(sscombo_KMC_corr_df,subset_apt_anno_mouse_df, by = "AptName")
-sscombo_KMC_corr_overlap_df = sscombo_KMC_corr_df %>% dplyr::select(c("AptName","AptName_SOMATarget","Genes","Seer_UniProt","SOMA_Target","SOMA_TargetFullName","SOMA_UniProt","Quality")) %>% unique()
+sscombo_KMC_corr_overlap_df = sscombo_KMC_corr_df %>% dplyr::select(c("AptName","AptName_SOMATarget","HOM_UniProt","HOM_Gene","SOMA_Genes","MUS_UniProt","MUS_Gene","Seer_Genes","Quality")) %>% unique()
 
 #Plot distribution of quality in overlap protein aptamers
 quality_overlap_plot = sscombo_KMC_corr_overlap_df %>%
   mutate(Quality = factor(Quality, levels = c("Low", "Medium", "High"))) %>%
   dplyr::group_by(Quality) %>%
-  summarise(Apt_Count = n(), Percent = round((Apt_Count/527)*100,digits = 0), Perc_Label = paste(as.character(Percent),"%",sep = "")) %>% #Total number of rows in sscombo_KMC_corr_overlap_df, higher than 476 because of 2+ aptamers targeting single protein
+  summarise(Apt_Count = n(), Percent = round((Apt_Count/811)*100,digits = 0), Perc_Label = paste(as.character(Percent),"%",sep = "")) %>% #Total number of rows in sscombo_KMC_corr_overlap_df, higher than 476 because of 2+ aptamers targeting single protein
   ggplot(aes(x = Quality, y = Apt_Count, fill = Quality)) +
   geom_bar(stat = "identity") +
   geom_text(aes(label = Perc_Label), position=position_dodge(width=0.9),vjust=-0.25) +
@@ -4125,32 +4175,26 @@ quality_overlap_plot = sscombo_KMC_corr_overlap_df %>%
        x = "",
        y = "Aptamer Count") +
   theme_bw() +
-  scale_y_continuous(limits = c(0,550), breaks = c(100,200,300,400,500)) +
-  geom_hline(yintercept = 527, color = "purple4") +
-  geom_text(aes(2,527,label = "Total Aptamers in Overlap: 527", vjust = -1),color = "purple4") +
+  scale_y_continuous(limits = c(0,850), breaks = c(100,200,300,400,500,600,700,800,900)) +
+  geom_hline(yintercept = 811, color = "purple4") +
+  geom_text(aes(2,811,label = "Total Aptamers in Overlap: 811", vjust = -1),color = "purple4") +
   theme(legend.position = "none")
 ggsave("quality_overlap_plot.png")
 quality_overlap_plot
 
-#Generate table of protein overlaps (removing NP replicates)
-# protID_overlap2 = sscombo_KMC_corr_df %>% dplyr::select(c(Gene_Merge,SOMA_Target,SOMA_TargetFullName,SOMA_UniProt,Genes,Seer_UniProt,Quality)) %>% unique()
-# colnames(protID_overlap2) = c("Gene_Merge","SOMA_Target","SOMA_TargetFullName","SOMA_UniProt","Seer_Target","Seer_UniProt","Quality")
-
 #FC correlation graph - filtered mouse
 corr_sscombo_KMC_plot = sscombo_KMC_corr_df %>%
-  #filter(Significance_wt == "Y") %>%
   ggplot() +
   geom_point(data = sscombo_KMC_corr_df, aes(x = AptName_SeerFeature, y = Soma_FC, colour = "SomaLogic"), size = 1) +
-  geom_text_repel(aes(x = AptName_SeerFeature, y = Soma_FC,label = SOMA_Sig_FC_Prot), max.overlaps = 10, size = 2) +
+  geom_text_repel(aes(x = AptName_SeerFeature, y = Soma_FC,label = SOMA_Sig_FC_Prot), max.overlaps = 8, size = 2) +
   geom_point(data = sscombo_KMC_corr_df, aes(x = AptName_SeerFeature, y = Seer_FC, colour = "Seer MS"), shape = "triangle", size = 1) +
-  geom_text_repel(aes(x = AptName_SeerFeature, y = Seer_FC,label = Seer_Sig_FC_Prot), max.overlaps = 10, size = 2) +
+  geom_text_repel(aes(x = AptName_SeerFeature, y = Seer_FC,label = Seer_Sig_FC_Prot), max.overlaps = 8, size = 2) +
   labs(title = "Fold Change (FC) Magnitude: SomaLogic vs. Seer",
        subtitle = "Mouse KMC-PDAC v. KMC Control",
        x = "Protein IDs (SomaAptamer_SeerFeature)",
        y = "Log2(FC)",
        colour = "Platform") +
   theme_bw() +
-  # theme(axis.text.x = element_text(angle = 90, vjust = 0.5, size = 5)) +
   ylim(-3,3) +
   rremove("x.grid") +
   geom_hline(yintercept = 2, colour = "black", linetype = "dashed") +
@@ -4177,9 +4221,7 @@ corr_sscombo_KMC_sig_plot = sscombo_KMC_corr_sig_df %>%
        y = "Log2(FC)",
        colour = "Method") +
   theme_bw() +
-  # theme(axis.text.x = element_text(angle = 90, vjust = 0.5, size = 5)) +
   ylim(-3,3) +
-  #rremove("x.grid") +
   geom_hline(yintercept = 2, colour = "black", linetype = "dashed") +
   geom_hline(yintercept = -2, colour = "black", linetype = "dashed") +
   theme(axis.text.x = element_blank()) +
@@ -4207,9 +4249,11 @@ corr2_sscombo_KMC_plot = sscombo_KMC_corr_df %>%
   geom_vline(xintercept = -2, colour = "purple4", linetype = "dashed", linewidth = 1) +
   geom_hline(yintercept = 2, colour = "turquoise4", linetype = "dashed", linewidth = 1) +
   geom_hline(yintercept = -2, colour = "turquoise4", linetype = "dashed", linewidth = 1) +
-  #theme(axis.text.x = element_blank()) +
-  theme(axis.title = element_text(vjust = 0.5, size = 12)) +
-  theme(legend.title = element_text(size = 12)) +
+  theme(legend.title = element_text(size = 14)) +
+  theme(legend.text = element_text(size = 12)) +
+  theme(axis.text.x = element_text(vjust = 0.5, size = 12)) +
+  theme(axis.text.y = element_text(vjust = 0.5, size = 12)) +
+  theme(axis.title = element_text(vjust = 0.5, size = 14)) +
   theme(title = element_text(size = 14))
 ggsave("corr2_sscombo_KMC_plot.png", width = 7.29, height = 4.51, units = "in")
 corr2_sscombo_KMC_plot
@@ -4286,7 +4330,7 @@ colnames(soma_CChuman_df) = c("AptName","SOMA_wt_pval","SOMA_Diff_Median","SOMA_
 seer_CChuman_df = read_tsv("/Users/sorianos/Code/SomaLogic/Seer_HumanCC_WiT.tsv")
 seer_CChuman_df = seer_CChuman_df %>% dplyr::select(-c(count_Case,count_Control))
 
-#Find number of protein IDs (removing NP duplicates) in seer KMC data - AFTER all filters
+#Find number of protein IDs (removing NP duplicates) in seer human data - AFTER all filters
 seer_CChuman_proteins = seer_CChuman_df %>% dplyr::select(c(`Protein IDs`,`Gene names`)) %>% unique() #%>% nrow()
 
 #Transform dataset into same format as mouse seer file (seer_KMC_df)
@@ -4429,10 +4473,13 @@ corr2_sscombo_CChuman_plot = sscombo_CChuman_corr_df %>%
   geom_vline(xintercept = -2, colour = "purple4", linetype = "dashed", linewidth = 1) +
   geom_hline(yintercept = 2, colour = "turquoise4", linetype = "dashed", linewidth = 1) +
   geom_hline(yintercept = -2, colour = "turquoise4", linetype = "dashed", linewidth = 1) +
-  #theme(axis.text.x = element_blank()) +
-  theme(axis.title = element_text(vjust = 0.5, size = 12)) +
-  theme(legend.title = element_text(size = 12)) +
+  theme(legend.title = element_text(size = 14)) +
+  theme(legend.text = element_text(size = 12)) +
+  theme(axis.text.x = element_text(vjust = 0.5, size = 12)) +
+  theme(axis.text.y = element_text(vjust = 0.5, size = 12)) +
+  theme(axis.title = element_text(vjust = 0.5, size = 14)) +
   theme(title = element_text(size = 14))
 ggsave("corr2_sscombo_CChuman_plot.png", width = 7.29, height = 4.51, units = "in")
 corr2_sscombo_CChuman_plot
 ```
+### Murine PDAC Re-Searched DIANN Raw Data

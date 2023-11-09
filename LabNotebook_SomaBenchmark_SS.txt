@@ -814,11 +814,53 @@ Seer Proteograph PAS: Pending (requires unique login)
 * Switched v4 main code to use UniProt for Seer --> Soma merge instead of gene names
   ** NEW protein overlap numbers - by UniProt now, using new KEGG query method:
     *** Total overlap: 833
-    *** Seer-sig overlap: 
-* Overlap assessment:
-  ** Proteins unique to Soma --> Seer pivot: 19
-  ** Proteins unique to Seer --> Soma pivot: 23
+    *** Seer-sig overlap: 104
 * Uploaded updated scripts to github
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+02NOV2023 - *(@^@)*
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Examined uniprot-based overlap sets in more detail - keeping all uniprot and gene columns (dataset labels (Seer/Soma) and pivot labels (MUS/HOM):
+  ** Unique proteins to Soma --> Seer overlap set: 51
+  ** Unique proteins to Seer --> Soma overlap set: 66
+  ** Intersect of both overlap sets: 767
+* Examined uniprot-based overlap sets in more detail - UniProts only:
+  ** Unique proteins to Soma --> Seer overlap set: 37
+  ** Unique proteins to Seer --> Soma overlap set: 54
+  ** Intersect of both overlap sets: 712
+* Based on above results, for simplicity decided to only use intersecting proteins (MUS-HOM uniprot matches in common in both overlap sets - using uniprot/gene labels, 767 overlap proteins)
+  ** Resulted in a dataset for correlation calculations/plotting of 2843 unique SomaAptamer_SeerFeature pairs
+* 811 unique aptamers in new intersecting-filtered correlation dataset - adjusted quality bar graph to reflect that (used to be 527)
+  ** sscombo_KMC_corr_overlap_df$AptName %>% unique() %>% length()
+* Platform protein overlap (intersecting IDs only, keeping all mouse results) by Aptamer_SeerFeature pair:
+  ** sscombo_KMC_corr_df$AptName_SeerFeature %>% unique() %>% length() --> 2547
+  ** sscombo_KMC_corr_df$UniProts_MUS_HOM %>% unique() %>% length() --> 710
+  ** sscombo_KMC_corr_sig_df$AptName_SeerFeature %>% unique() %>% length() --> 181
+  ** sigprotID_sscombo_KMC_intersectfilt = sigprotID_sscombo_KMC_intersectfilt_df$UniProts_MUS_HOM %>% unique() %>% length() --> 88
+  ** sscombo_CChuman_corr_df$UniProt %>% unique() %>% length() --> 282 (out of 409 total Seer UniProts)
+  ** soma_CChuman_df$UniProt %>% unique() %>% length() --> 6377 total Soma UniProts
+  ** soma_KMC_df$UniProt %>% unique() %>% length() --> 6356 total Soma UniProts
+* Remade mouse FC/correlation plots for paper, updated new overlap numbers based on uniprot (instead of gene name estimates), and switched all terminologies/number to be UniProt-based comparisons (not gene name)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
