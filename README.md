@@ -10,8 +10,9 @@ This repository contains all custom scripts created during the SomaLogic Benchma
 
 | File Name | Description |
 | :---:   | :---: |
-| [Somalogic_Benchmark_v4.Rmd](Somalogic_Benchmark_v4.Rmd) | R script for main project analysis. |
+| [Somalogic_Benchmark_v4.Rmd](Somalogic_Benchmark_v4.Rmd) | R markdown for main project analysis. |
 | [NomPivot_MouseHuman.R](NomPivot_MouseHuman.R) | R script with custom functions for mouse-human nomenclature pivots based on submitted gene names. Not currently used in main script, but can be used if analysis is targeted at gene-based results instead of protein-based results. |
-| [NomPivot_MouseHuman_UniProtInput.Rmd](NomPivot_MouseHuman_UniProtInput.Rmd) | R script with custom functions for mouse-human nomenclature pivots based on submitted UniProt IDs. Currently used in main script for protein-based analysis. |
-| [LabNotebook_SomaBenchmark_SS.txt](LabNotebook_SomaBenchmark_SS.txt) | Lab notebook for SomaLogic Benchmark Project |
+| [NomPivot_MouseHuman_UniProtInput.R](NomPivot_MouseHuman_UniProtInput.R) | R script with custom functions for mouse-human nomenclature pivots based on submitted UniProt IDs. Currently used in main script for protein-based analysis. |
+| [Seer_HumanCC_WiT.R](Seer_HumanCC_WiT.R) | R script used to process human Seer FC data from main OHSU CEDAR prostate cancer proteomic study. |
+| [LabNotebook_SomaBenchmark_SS.txt](LabNotebook_SomaBenchmark_SS.txt) | Lab notebook for SomaLogic Benchmark Project. |
 | [2023_Fall_Soriano](2023_Fall_Soriano.docx) | Fall term paper submitted for UO BGMP - contains project background and discussion on relevant results. |
