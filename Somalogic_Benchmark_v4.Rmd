@@ -4014,7 +4014,9 @@ soma_KMC_df = WiT_DE3_mouse_df %>% dplyr::select(-c(count_KMC_PDAC,count_KMC_con
                                     mutate(Target = toupper(Target))
 colnames(soma_KMC_df) = c("AptName","SOMA_wt_pval","SOMA_Diff_Median","SOMA_wt_pval_BH","SOMA_Target","SOMA_TargetFullName","UniProt","SOMA_p_val_sig","SOMA_prot_sig")
 #Perform nomenclature pivot from Soma human uniprots to corresponding mouse uniprots
+###NOTE: Depending on KEGG server status, the following function may result in a timeout error. If so, run again and continue when successful.
 NCBI_KEGG_anno_df = nomConvert_Human_Mouse(soma_KMC_df$UniProt)
+###
 #Merge mouse uniprots and other mouse annotations to Soma data
 soma_KMC_filt_df = merge(soma_KMC_df,NCBI_KEGG_anno_df, by.x = "UniProt", by.y = "HOM_UniProt", all.x = TRUE) %>% unique()
 #Filter out human/soma genes with no mouse UniProt match
@@ -4044,8 +4046,9 @@ sscombo_KMC_sig_df = sscombo_KMC_df %>% filter(Significance_wt == "Y")
 sigprotID_KMC_overlap = sscombo_KMC_sig_df %>% dplyr::select(c("MUS_UniProt","Seer_Genes","MUS_Gene","HOM_UniProt","SOMA_Genes","HOM_Gene")) %>% unique() #%>% nrow()
 
 #Calculate seer --> soma protein overlap
-#seer_KMC_filt_df = seer_KMC_df %>% filter(!is.na(UniProt)) #%>% dplyr::select(c(Genes)) %>% unique()
+###NOTE: Depending on KEGG server status, the following function may result in a timeout error. If so, run again and continue when successful.
 NCBI_KEGG_Seer_anno_df = nomConvert_Mouse_Human(seer_KMC_df$UniProt)
+###
 seer_KMC_filt_df = merge(seer_KMC_df,NCBI_KEGG_Seer_anno_df, by.x = "UniProt", by.y = "MUS_UniProt", all.x = TRUE)
 colnames(seer_KMC_filt_df)[colnames(seer_KMC_filt_df) == "Genes"] = "Seer_Genes"
 colnames(seer_KMC_filt_df)[colnames(seer_KMC_filt_df) == "UniProt"] = "MUS_UniProt"
@@ -4064,6 +4067,15 @@ seer_KMC_proteins = seer_KMC_df %>% dplyr::select(c(Genes,UniProt)) %>% unique()
 sig_seer_KMC_proteins = seer_KMC_df %>% filter(Significance_wt == "Y") %>% dplyr::select(c(Genes,UniProt)) %>% unique() %>% nrow()
 
 #Check for difference btwn soma --> seer and seer --> soma overlaps - all Seer/SOMA and MUS/HOM labels
+#NOTE ON OVERLAP:
+    #From a single submitted uniprot ID (either species), it is possible for my pivot functions to return multiple mapped uniprots because of how the
+    #KEGG database is organized for the orthology query response. Depending on the direction I went (Seer murine --> human pivot for comparison to Soma
+    #human, or Soma human --> murine pivot for comparison to Seer murine), I was getting very different overlap numbers due at least partially to these
+    #cases where multiple mapping matches were found for a single uniprot. In an effort to get to a single overlap number (without just arbitrarily
+    #choosing a pivot direction), I calculated the “overall” overlap by using the intersect() function to make a list of all uniprot pairs
+    #(UniProts_MUS_HOM  column in the picture above) in common between the pivot beginning with Soma (human) and the pivot beginning with Seer (murine).
+    #I then used that list to filter the combined results of both pivots to only include proteins where the murine UniProt and human uniprot were paired
+    #together in both pivots.
 #Proteins unique to SOMA --> Seer overlap
 overlap_method_diff_SoSe = dplyr::setdiff(sscombo_KMC_protID_overlap,seer_sscombo_KMC_protein_overlap)
 #Proteins unique to Seer --> SOMA overlap
@@ -4072,16 +4084,6 @@ overlap_method_diff_SeSo = dplyr::setdiff(seer_sscombo_KMC_protein_overlap, ssco
 overlap_method_intersect = dplyr::intersect(sscombo_KMC_protID_overlap,seer_sscombo_KMC_protein_overlap)
 overlap_method_intersect = overlap_method_intersect %>% mutate(UniProts_MUS_HOM = paste(MUS_UniProt,HOM_UniProt,sep = "_"))
 summary(comparedf(sscombo_KMC_protID_overlap,seer_sscombo_KMC_protein_overlap))
-
-#Check for diff btwn soma --> seer and seer --> soma overlaps - UniProt labels only
-# sscombo_KMC_protID_overlap_UPs = sscombo_KMC_protID_overlap %>% dplyr::select(c("MUS_UniProt","HOM_UniProt"))
-# seer_sscombo_KMC_protein_overlap_UPs = seer_sscombo_KMC_protein_overlap %>% dplyr::select(c("MUS_UniProt","HOM_UniProt"))
-# #Proteins unique to SOMA --> Seer overlap
-# overlap_method_diff_SoSe_UPs = dplyr::setdiff(sscombo_KMC_protID_overlap_UPs,seer_sscombo_KMC_protein_overlap_UPs)
-# #Proteins unique to Seer --> SOMA overlap
-# overlap_method_diff_SeSo_UPs = dplyr::setdiff(seer_sscombo_KMC_protein_overlap_UPs, sscombo_KMC_protID_overlap_UPs)
-# #Proteins shared in both overlap sets (SOMA --> Seer & Seer --> SOMA intersect)
-# overlap_method_intersect_UPs = dplyr::intersect(sscombo_KMC_protID_overlap_UPs,seer_sscombo_KMC_protein_overlap_UPs)
 ```
 
 ```{r KMC_WiT_Mouse_Alt_MethodComparison, include = FALSE}
@@ -4239,7 +4241,7 @@ corr2_sscombo_KMC_plot = sscombo_KMC_corr_df %>%
   geom_text_repel(aes(x = Soma_FC, y = Seer_FC, label = Seer_Sig_FC_Prot), max.overlaps = 20, size = 2) +
   scale_color_manual(values = c("black","turquoise3","purple2","green2")) +
   labs(title = "SomaLogic vs. Seer Fold Change (FC)",
-       subtitle = "Mouse KMC-PDAC v. KMC Control",
+       subtitle = "Murine KMC-PDAC v. KMC Control",
        x = "Log2(Soma_FC)",
        y = "Log2(Seer_FC)") +
   theme_bw() +
@@ -4482,4 +4484,3 @@ corr2_sscombo_CChuman_plot = sscombo_CChuman_corr_df %>%
 ggsave("corr2_sscombo_CChuman_plot.png", width = 7.29, height = 4.51, units = "in")
 corr2_sscombo_CChuman_plot
 ```
-### Murine PDAC Re-Searched DIANN Raw Data
