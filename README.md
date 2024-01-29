@@ -17,3 +17,4 @@ This repository contains all custom scripts created during the SomaLogic Benchma
 | [LabNotebook_SomaBenchmark_SS.txt](LabNotebook_SomaBenchmark_SS.txt) | Lab notebook for SomaLogic Benchmark Project. |
 | [2023_Fall_Soriano.docx](2023_Fall_Soriano.docx) | Fall term paper submitted for UO BGMP - contains project background and discussion on relevant results. |
 | [2023_Fall_Soriano_Figures](2023_Fall_Soriano_Figures) | PNG images of the three figure results included in the [2023_Fall_Soriano.docx](2023_Fall_Soriano.docx) paper. |
+| [2024_Updates](2024_Updates) | Updates to this project post-BGMP final paper. |
