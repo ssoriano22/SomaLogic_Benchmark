@@ -13,11 +13,16 @@ library(naniar)
 library(stats)
 library(toolbox)
 
-#Load Seer KMC-KMC_control data
+#Load Seer data
 seer_CChuman_df = read_tsv("/Users/sorianos/Code/SomaLogic/Seer_Human_proteinGroups.txt")
 seer_CChuman_anno_df = read_tsv("/Users/sorianos/Code/SomaLogic/Seer_Human_annotation_NPs_separate.txt")
 seer_CChuman_anno_df = seer_CChuman_anno_df %>% dplyr::select(Condition, Experiment)
 colnames(seer_CChuman_anno_df)[colnames(seer_CChuman_anno_df) == "Experiment"] = "Sample_NP"
+
+#Filter out contaminants in MaxQuant DDA data
+seer_CChuman_df = seer_CChuman_df %>% filter(is.na(`Only identified by site`)) %>% 
+                                      filter(is.na(Reverse)) %>% 
+                                      filter(is.na(`Potential contaminant`))
 
 #Transform dataset into same format as mouse seer file (seer_KMC_df) - create features, sample, NP columns; prepare for WiT
 seer_CChuman_df = seer_CChuman_df %>% pivot_longer(names_to = "Sample_NP",
@@ -33,6 +38,9 @@ seer_CChuman_df = seer_CChuman_df %>% pivot_longer(names_to = "Sample_NP",
 
 #Merge in Case/Control annotation per Sample_NP
 seer_CChuman_df = merge(seer_CChuman_df, seer_CChuman_anno_df, by = "Sample_NP")
+
+#Write no sparsity filter version of data to saved table
+write.table(seer_CChuman_df, "~/Code/SomaLogic/Seer_HumanCC_raw_noSF.tsv", sep = "\t", row.names = FALSE)
 
 # #Find number of protein IDs (removing NP duplicates) in seer KMC data - BEFORE ANY FILTERS
 # seer_CChuman_proteins = seer_CChuman_df %>% dplyr::select(c(`Protein IDs`,`Gene names`)) %>% unique() #%>% nrow()
@@ -66,6 +74,9 @@ seer_HumanCC_final_df = filt_prot_class_presence %>%
 
 #Find number of protein IDs (removing NP duplicates) in seer KMC data - AFTER sparsity filter, BEFORE WiT >1 filter
 seer_CChuman_proteins = seer_HumanCC_final_df %>% dplyr::select(c(`Protein IDs`,`Gene names`)) %>% unique() #%>% nrow()
+
+#Write 50% sparsity filter version of data to saved table
+write.table(seer_HumanCC_final_df, "~/Code/SomaLogic/Seer_HumanCC_raw_50SF.tsv", sep = "\t", row.names = FALSE)
 
 #Wilcox test
 #Transform data to wide form for Wilcox test

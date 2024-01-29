@@ -1,0 +1,490 @@
+---
+title: "SomaLogic Benchmark - Raw Seer Data"
+author: "Sophia Soriano"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(dplyr)
+library(tidyr)
+library(tidyverse)
+library(ggplot2)
+library(ggpubr)
+library(readxl)
+library(stringr)
+library(EnvStats)
+library(ggrepel)
+library(truncnorm)
+library(scales)
+library(naniar)
+library(stats)
+library(toolbox)
+library(plotly)
+library(htmlwidgets)
+```
+
+### Murine PDAC Re-Searched DIANN Raw Data
+
+```{r Load_Re-Search_Murine}
+diann_MUS_subset = read_tsv("/Users/sorianos/Code/SomaLogic/DIANN_MurinePDACsubset.tsv")
+mus_anno_df = read_tsv("/Users/sorianos/Code/SomaLogic/sample_NP_annotation_mouse.tsv")
+Soma_anno_df = read_tsv("/Users/sorianos/Code/SomaLogic/SomaLogic_Benchmark_MouseIDs.tsv")
+```
+```{r Organize_Data}
+#Code from Matt for DIANN raw data processing
+diann_MUS_subset = diann_MUS_subset %>%
+                    #Filter out peptides with Precursor and Protein Group intensities of 0
+                    filter(Precursor.Quantity > 0) %>%
+                    filter(PG.Quantity > 0) %>%
+                    #Filter our any peptides & protein groups that have a Q value of > 0.01 (FDR 1%)
+                    filter(Global.PG.Q.Value < 0.01) %>%
+                    filter(Global.Q.Value < 0.01) %>%
+                    filter(Q.Value < 0.01)
+
+#Gathering intensity data into one column - NOT NEEDED WITH REPORT.TSV - ALREADY IN LONG FORM (PG.MaxLFQ)
+# DIANN_df_L = DIANN_df %>% 
+#   pivot_longer(cols = starts_with("D..2021"),
+#                names_to = "Run_ID",
+#                values_to = "Intensity")
+
+#Find index value where the sample number starts in the .d file name - only needed to find indices for substring below
+#gregexpr(pattern = "_S", mus_anno_df$File.Name[1])
+
+#Make new Sample, NP, replicate columns in data df with grep/substring
+diann_MUS_subset = diann_MUS_subset %>% mutate(Sample = substring(Run,25,27)) %>%
+                                        mutate(NP = ifelse(grepl("NP1", Run), "NP1",
+                                                       ifelse(grepl("NP2", Run), "NP2",
+                                                              ifelse(grepl("NP3", Run), "NP3",
+                                                                     ifelse(grepl("NP4", Run), "NP4", "NP5"))))) %>%
+                                        mutate(Replicate = paste(Sample, NP, sep = "_")) %>%
+                                        mutate(Run = paste(Run,".d",sep = ""))
+
+#Rename anno column for file.name/run based left join (keeping all diann data rows, only present anno rows)
+mus_anno_df = mus_anno_df %>% filter(SampleName %in% Soma_anno_df$SampleName) %>%
+                              dplyr::select(c("File.Name","SampleName","Sample_ID","Group_final")) %>%
+                              unique()
+
+#Merge  data with biological annotation using file name/run
+colnames(mus_anno_df)[colnames(mus_anno_df) == "File.Name"] = "Run"
+combo_MUS_proteins = left_join(diann_MUS_subset,mus_anno_df,by="Run")
+
+#Convert output to summarized protein info by removing duplicate peptides
+MUS_proteins = combo_MUS_proteins %>%
+                group_by(Run, Protein.Group, PG.Quantity, PG.Normalised, PG.MaxLFQ, PG.Q.Value) %>%
+                distinct(Run, Protein.Group, PG.Quantity, PG.Normalised, PG.MaxLFQ, PG.Q.Value, .keep_all = TRUE) %>%
+                ungroup() %>%
+                mutate(Log2_LFQ_Intensity = ifelse(PG.MaxLFQ == 0, NA, log2(PG.MaxLFQ))) %>%
+                mutate(zscore = (PG.MaxLFQ - mean(PG.MaxLFQ))/sd(PG.MaxLFQ)) %>%
+                mutate(Log2_zscore = (Log2_LFQ_Intensity - mean(Log2_LFQ_Intensity))/sd(Log2_LFQ_Intensity))
+
+#No Sparsity filter
+w_MUS_proteins_noSparsityFilter = MUS_proteins %>% filter(Group_final == "KMC - PDAC" | Group_final == "KMC_control")
+write.table(w_MUS_proteins_noSparsityFilter, "~/Code/SomaLogic/Seer_MUS_proteins_KMC.tsv", sep = "\t", row.names = FALSE)
+```
+
+```{r Sparsity_Filter}
+#Find number of protein IDs (removing NP duplicates) in seer KMC data - BEFORE ANY FILTERS
+seer_KMC_proteins = MUS_proteins %>% filter(Group_final == "KMC - PDAC" | Group_final == "KMC_control") %>% dplyr::select(c("Protein.Ids","Protein.Names")) %>% unique() #%>% nrow()
+
+#Filter to only keep KMC control/KMC-PDAC
+MUS_proteins_KMC = MUS_proteins %>% filter(Group_final == "KMC - PDAC" | Group_final == "KMC_control")
+
+# Filter to those proteins present in at least 50% of at least one of the 8 classes
+filt_seer_MUS_KMC_df = MUS_proteins_KMC %>%
+  filter(!is.na(Log2_LFQ_Intensity)) %>%
+  group_by(Group_final) %>% 
+  mutate(max_samples = n_distinct(SampleName)) %>% #Calculate number of samples per status
+  ungroup() %>%
+  group_by(Group_final, Protein.Ids) %>%
+  mutate(num_detected = n_distinct(SampleName), frac_detected = num_detected / max_samples) %>% #Calculate detection fraction of each prot ID, separated by status
+  ungroup() %>%
+  dplyr::select(c("SampleName", "Protein.Ids", "Group_final", "frac_detected")) %>%
+  filter(frac_detected >= 0.50) %>% #Keep prot IDs w/ frac_detection > 50%
+  dplyr::select("SampleName", "Protein.Ids") %>%
+  unique() %>%
+  mutate(presence_tag = "sufficient") #Add column for tag indicating validity of prot ID (row)
+
+#Add presence tag data and remove other rows/prot ID entries
+filt_prot_class_presence = MUS_proteins_KMC %>%
+  left_join(filt_seer_MUS_KMC_df, by = c("SampleName","Protein.Ids")) %>%
+  mutate(presence_tag = ifelse(is.na(presence_tag), FALSE,TRUE)) %>%
+  filter(presence_tag) %>%
+  mutate(Feature = paste(NP, `Protein.Ids`, sep = "|"))
+
+#Select the final data table for the comparisons
+seer_MUS_KMC_final_df = filt_prot_class_presence %>%
+  dplyr::select(c("Replicate", "SampleName", "Group_final", "Protein.Ids", "Protein.Names", "First.Protein.Description", "Feature", "PG.MaxLFQ", "Log2_LFQ_Intensity"))
+
+#Find number of protein IDs (removing NP duplicates) in seer KMC data - AFTER sparsity filter, BEFORE WiT >1 filter
+seer_KMC_proteins_filt = seer_MUS_KMC_final_df %>% dplyr::select(c("Protein.Ids","Protein.Names")) %>% unique() #%>% nrow()
+
+#After 50% sparsity filter
+w_MUS_proteins_50Sparsity = seer_MUS_KMC_final_df %>% filter(Group_final == "KMC - PDAC" | Group_final == "KMC_control")
+write.table(w_MUS_proteins_50Sparsity, "~/Code/SomaLogic/Seer_MUS_proteins_KMC_50%Sparsity.tsv", sep = "\t", row.names = FALSE)
+
+```
+
+```{r WiT}
+#Transform data to wide form for Wilcox test, filter out NAs and count = 1 (not possible w/ Wilcox)
+#seer_MUS_KMC_WiT_df = seer_MUS_KMC_final_df %>% #*CHANGED DF TO MUS_PROTEINS TO TEST MATTS VERSION*
+  # group_by(Feature, Group_final) %>%
+  # summarize(data = list(Log2_LFQ_Intensity), count = n(), .groups = "drop") %>%
+  # pivot_wider(names_from = Group_final, values_from = c(data, count)) %>%
+  # filter(!(is.na(`count_Healthy control - late`) | `count_Healthy control - late` == 1)) %>%
+  # filter(!(is.na(`count_Lethal PanIN - late`) | `count_Lethal PanIN - late` == 1)) %>%
+  # filter(!(is.na(`count_Non-lethal PanIN`) | `count_Non-lethal PanIN` == 1)) %>%
+  # filter(!(is.na(`count_Lethal PanIN - early`) | `count_Lethal PanIN - early` == 1)) %>%
+  # filter(!(is.na(`count_Healthy control - early`) | `count_Healthy control - early` == 1)) %>%
+  # filter(!(is.na(`count_KPC - lung`) | `count_KPC - lung` == 1)) %>%
+  # filter(!(is.na(`count_KMC_control`) | `count_KMC_control` == 1)) %>%
+  # filter(!(is.na(`count_KMC - PDAC`) | `count_KMC - PDAC` == 1))
+
+num_KMC_PDAC <- 6
+num_KMC_ctrl <- 12
+
+de_test_KMC_PDAC_KMC_control = MUS_proteins %>%
+  filter(Group_final == "KMC - PDAC" | Group_final == "KMC_control") %>%
+  mutate(Feature = paste(NP, `Protein.Ids`, sep = "|")) %>% #*MOVED FEATURE MUTATE HERE FOR TESTING*
+  group_by(Feature) %>% 
+  mutate(frac_detection = n_distinct(SampleName)/(num_KMC_PDAC + num_KMC_ctrl)) %>% 
+  filter(frac_detection >= 0.5) %>%
+  group_by(Feature, Group_final) %>%
+  #CAN CHANGE LISTED COLUMN TO PG.MaxLFQ or zscore and change write file below to reflect
+  summarize(data = list(Log2_LFQ_Intensity), count = n(), .groups = "drop") %>%
+  #mutate(data = replace(data, data == "-Inf", NA)) %>% 
+  pivot_wider(names_from = Group_final, values_from = c(data, count))
+
+#Save table for raw data feature comparison btwn methods
+w_MUS_proteins = MUS_proteins %>% filter(Group_final == "KMC - PDAC" | Group_final == "KMC_control") %>%
+                                  mutate(Feature = paste(NP, `Protein.Ids`, sep = "|")) %>% #*MOVED FEATURE MUTATE HERE FOR TESTING*
+                                  group_by(Feature) %>% 
+                                  mutate(frac_detection = n_distinct(SampleName)/(num_KMC_PDAC + num_KMC_ctrl)) %>% 
+                                  filter(frac_detection >= 0.5)
+write.table(w_MUS_proteins, "~/Code/SomaLogic/Seer_MUS_Log2proteins_KMC.tsv", sep = "\t", row.names = FALSE)
+#UNCOMMENT TO SAVE RAW INTENSITY DATA
+#write.table(w_MUS_proteins, "~/Code/SomaLogic/Seer_MUS_proteins_KMC.tsv", sep = "\t", row.names = FALSE)
+
+#Wilcox test - store pvalue and difference
+seer_MUS_KMC_WiT_res_df = de_test_KMC_PDAC_KMC_control %>%
+  filter(`count_KMC_control` > 1) %>% #!is.na(`count_KMC_control`) | 
+  filter(`count_KMC - PDAC` > 1) %>%
+  rowwise() %>%
+  mutate(wt_pval = wilcox.test(unlist(`data_KMC - PDAC`), unlist(`data_KMC_control`))$p.value) %>%
+  mutate(Diff = median(unlist(`data_KMC - PDAC`)) - median(unlist(`data_KMC_control`))) %>% 
+  ungroup() %>% 
+  mutate(wt_pval_BH = p.adjust(wt_pval, method = "BH"))
+
+seer_MUS_KMC_WiT_anno_df = MUS_proteins %>% 
+  mutate(Feature = paste(NP, `Protein.Ids`, sep = "|")) %>%
+  dplyr::select(c("Feature", "Protein.Ids", "Protein.Names", "First.Protein.Description")) %>% 
+  distinct(Feature, .keep_all = TRUE)
+
+seer_MUS_KMC_WiT_res_df = left_join(seer_MUS_KMC_WiT_res_df, seer_MUS_KMC_WiT_anno_df, by = "Feature")
+
+seer_MUS_KMC_WiT_res_df = seer_MUS_KMC_WiT_res_df %>% 
+  mutate(p_val_sig = ifelse(wt_pval_BH < 0.05, "Significant", "Non"),
+         proteins_sig = ifelse(wt_pval_BH < 0.05, `Protein.Names`, "")
+  )
+```
+
+```{r WiT_Pvalue_Plot}
+#Plot WiT pvalue distribution - before multiple testing correction
+seer_MUS_KMC_WiT_pval_plot = seer_MUS_KMC_WiT_res_df %>%
+  ggplot(aes(wt_pval)) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  geom_histogram(breaks = seq(0,1,0.05), fill = "#22c6c9", color = "black", alpha = 0.5) +
+  labs(x = "p-value",
+       y = "Aptamer Count",
+       title = "Seer Proteograph: Mouse KMC-PDAC v. KMC Control",
+       subtitle = "50% Sparsity Filter") +
+  theme(plot.subtitle = element_text(face = "italic"))
+ggsave("seer_MUS_KMC_WiT_pval_plot.png")
+seer_MUS_KMC_WiT_pval_plot
+```
+
+```{r WiT_Volcano_Plot}
+#Wilcox volcano Plot
+seer_MUS_KMC_WiT_volc_plot = seer_MUS_KMC_WiT_res_df  %>%
+  ggplot(aes(x = Diff, y = -log(wt_pval_BH, 10), group = p_val_sig)) +
+  geom_point(aes(color = p_val_sig, text = `Protein.Names`), size = 2, alpha = 0.5) +
+  geom_hline(yintercept = -log(0.05, 10), linetype = "dashed", color = "red") +
+  geom_vline(xintercept = 2, linetype = "dashed", color = "red") +
+  geom_vline(xintercept = -2, linetype = "dashed", color = "red") +
+  geom_text_repel(aes(label = proteins_sig), max.overlaps = 20) +
+  scale_color_manual(values = c("black", "red")) +
+  labs(title = "Seer Proteograph: Mouse KMC-PDAC v. KMC Control",
+       x = "Log2(FC)",
+       y = "-log10(p-value)",
+       subtitle = "50% Sparsity Filter") +
+  theme_bw() +
+  #xlim(-5,5) +
+  theme(legend.position = "none") +
+  theme(plot.subtitle = element_text(face = "italic"))
+ggsave("seer_MUS_KMC_WiT_volc_plot.png")
+seer_MUS_KMC_WiT_volc_plot
+
+seer_MUS_KMC_WiT_volc_plotly = ggplotly(seer_MUS_KMC_WiT_volc_plot, tooltip = "proteins_sig")
+saveWidget(seer_MUS_KMC_WiT_volc_plotly, "seer_MUS_KMC_WiT_volc_plotly.html", selfcontained = F, libdir = "lib")
+
+#Remove list-type columns before writing WiT result table
+w_seer_MUS_KMC_WiT_res_df = seer_MUS_KMC_WiT_res_df %>% dplyr::select(-c("data_KMC - PDAC","data_KMC_control"))
+write.table(w_seer_MUS_KMC_WiT_res_df, "~/Code/SomaLogic/Seer_MUS_KMC_WiT.tsv", sep = "\t", row.names = FALSE)
+```
+
+```{r Comparison_Welch's_Seer_Result}
+#Load Seer KMC-KMC_control data
+seer_WetT_KMC_df = read_tsv("/Users/sorianos/Code/Project_Disney/DE_KMC_PDAC_KMC_ctrl.tsv")
+seer_WetT_KMC_df = seer_WetT_KMC_df %>% dplyr::select(-c(`count_KMC - PDAC`,count_KMC_control,`data_KMC - PDAC`,data_KMC_control,diff_mean,t_pval,t_pval_BH,Significance_t,Sig_Gene_t)) %>%
+                                  mutate(UniProt = ifelse(grepl(";", Protein.Group), sub(";.*", "", Protein.Group), Protein.Group)) %>%
+                                  mutate(Genes = ifelse(grepl(";", Genes), sub(";.*", "", Genes), Genes)) %>%
+                                  mutate(Feature = ifelse(grepl(";", feature), sub(";.*", "", feature), feature)) %>%
+                                  mutate(Feature = ifelse(grepl("_", Feature), sub("_", "|", Feature), Feature)) %>%
+                                  dplyr::select(-c("Protein.Group","feature"))
+
+#Find total number of features - Seer KMC Welch's test, old search
+seer_WetT_KMC_proteins = seer_WetT_KMC_df #%>% dplyr::select(c(Feature)) %>% unique() #%>% nrow()
+#Find number of sig features - Seer KMC Welch's test, old search
+sig_seer_WetT_KMC_proteins = seer_WetT_KMC_df %>% filter(Significance_wt == "Y") #%>% dplyr::select(c(Feature)) %>% unique() #%>% nrow()
+#Find total number of features - Seer KMC Wilcox test, new search
+seer_WiT_KMC_proteins = seer_MUS_KMC_WiT_res_df %>% mutate(UniProt = ifelse(grepl(";", Protein.Ids), sub(";.*", "", Protein.Ids), Protein.Ids)) %>% 
+                                                    mutate(Protein.Names = ifelse(grepl(";", Protein.Names), sub(";.*", "", Protein.Names), Protein.Names)) %>%
+                                                    mutate(Feature = ifelse(grepl(";", Feature), sub(";.*", "", Feature), Feature)) #%>%
+                                                    #dplyr::select(c(Feature)) %>% unique() #%>% nrow()
+#Find number of sig features - Seer KMC Wilcox test, new search
+sig_seer_WiT_KMC_proteins = seer_MUS_KMC_WiT_res_df %>% filter(p_val_sig == "Significant") %>% 
+                                                        mutate(UniProt = ifelse(grepl(";", Protein.Ids), sub(";.*", "", Protein.Ids), Protein.Ids)) %>% 
+                                                        mutate(Protein.Names = ifelse(grepl(";", Protein.Names), sub(";.*", "", Protein.Names), Protein.Names)) %>%
+                                                        mutate(Feature = ifelse(grepl(";", Feature), sub(";.*", "", Feature), Feature)) #%>%
+                                                        #dplyr::select(c(Feature)) %>% unique() #%>% nrow()
+
+#Features in common in both new search KMC DE (Wilcox test) and old search KMC DE (Welch's t-test)
+seer_KMC_feature_intersect = dplyr::intersect(seer_WetT_KMC_proteins$Feature,seer_WiT_KMC_proteins$Feature)
+#Sig features in common in both new search KMC DE and old search KMC DE
+seer_KMC_sigfeature_intersect = dplyr::intersect(sig_seer_WetT_KMC_proteins$Feature,sig_seer_WiT_KMC_proteins$Feature)
+```
+```{r Welchs_NewSearch}
+#Transform data to wide form for Welchs test, filter out NAs and count = 1 (not possible w/ Wilcox)
+# seer_MUS_KMC_WetT_df = seer_MUS_KMC_final_df %>%
+#   group_by(Feature, Group_final) %>%
+#   summarize(data = list(Log2_LFQ_Intensity), count = n(), .groups = "drop") %>%
+#   pivot_wider(names_from = Group_final, values_from = c(data, count)) %>%
+#   # filter(!(is.na(`count_Healthy control - late`) | `count_Healthy control - late` == 1)) %>%
+#   # filter(!(is.na(`count_Lethal PanIN - late`) | `count_Lethal PanIN - late` == 1)) %>%
+#   # filter(!(is.na(`count_Non-lethal PanIN`) | `count_Non-lethal PanIN` == 1)) %>%
+#   # filter(!(is.na(`count_Lethal PanIN - early`) | `count_Lethal PanIN - early` == 1)) %>%
+#   # filter(!(is.na(`count_Healthy control - early`) | `count_Healthy control - early` == 1)) %>%
+#   # filter(!(is.na(`count_KPC - lung`) | `count_KPC - lung` == 1)) %>%
+#   filter(!(is.na(`count_KMC_control`) | `count_KMC_control` == 1)) %>%
+#   filter(!(is.na(`count_KMC - PDAC`) | `count_KMC - PDAC` == 1))
+
+num_KMC_PDAC <- 6
+num_KMC_ctrl <- 12
+
+de_test_KMC_PDAC_KMC_control <- MUS_proteins %>%
+  filter(Group_final == "KMC - PDAC" | Group_final == "KMC_control") %>%
+  mutate(Feature = paste(NP, `Protein.Ids`, sep = "|")) %>% #*MOVED FEATURE MUTATE HERE FOR TESTING*
+  group_by(Feature) %>% 
+  mutate(frac_detection = n_distinct(SampleName)/(num_KMC_PDAC + num_KMC_ctrl)) %>% 
+  filter(frac_detection >= 0.5) %>%
+  group_by(Feature, Group_final) %>%
+  summarize(data = list(Log2_LFQ_Intensity), count = n(), .groups = "drop") %>%
+  #mutate(data = replace(data, data == "-Inf", NA)) %>% 
+  pivot_wider(names_from = Group_final, values_from = c(data, count))
+
+#Welchs test - store pvalue and difference
+seer_MUS_KMC_WetT_res_df = de_test_KMC_PDAC_KMC_control %>%
+  filter(!(is.na(`count_KMC_control`) | `count_KMC_control` == 1)) %>%
+  filter(!(is.na(`count_KMC - PDAC`) | `count_KMC - PDAC` == 1)) %>%
+  rowwise() %>%
+  mutate(wt_pval = t.test(unlist(`data_KMC - PDAC`), unlist(`data_KMC_control`), var.equal = FALSE)$p.value) %>%
+  mutate(Diff = median(unlist(`data_KMC - PDAC`)) - median(unlist(`data_KMC_control`))) %>% 
+  ungroup() %>% 
+  mutate(wt_pval_BH = p.adjust(wt_pval, method = "BH"))
+
+seer_MUS_KMC_WetT_anno_df = MUS_proteins %>% 
+  mutate(Feature = paste(NP, `Protein.Ids`, sep = "|")) %>%
+  dplyr::select(c("Feature", "Protein.Ids", "Protein.Names", "First.Protein.Description")) %>% 
+  distinct(Feature, .keep_all = TRUE)
+
+seer_MUS_KMC_WetT_res_df = left_join(seer_MUS_KMC_WetT_res_df, seer_MUS_KMC_WetT_anno_df, by = "Feature")
+
+seer_MUS_KMC_WetT_res_df = seer_MUS_KMC_WetT_res_df %>% 
+  mutate(p_val_sig = ifelse(wt_pval_BH < 0.05, "Significant", "Non"),
+         proteins_sig = ifelse(wt_pval_BH < 0.05, `Protein.Names`, "")
+  )
+```
+
+```{r Welchs_Pvalue_Plot}
+#Plot Welchs pvalue distribution - before multiple testing correction
+seer_MUS_KMC_WetT_pval_plot = seer_MUS_KMC_WetT_res_df %>%
+  ggplot(aes(wt_pval)) +
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  geom_histogram(breaks = seq(0,1,0.05), fill = "#22c6c9", color = "black", alpha = 0.5) +
+  labs(x = "p-value",
+       y = "Aptamer Count",
+       title = "Seer Proteograph: Mouse KMC-PDAC v. KMC Control",
+       subtitle = "50% Sparsity Filter") +
+  theme(plot.subtitle = element_text(face = "italic"))
+ggsave("seer_MUS_KMC_WetT_pval_plot.png")
+seer_MUS_KMC_WetT_pval_plot
+```
+
+```{r Welchs_Volcano_Plot}
+#Welchs volcano plot
+seer_MUS_KMC_WetT_volc_plot = seer_MUS_KMC_WetT_res_df  %>%
+  ggplot(aes(x = Diff, y = -log(wt_pval_BH, 10), group = p_val_sig)) +
+  geom_point(aes(color = p_val_sig, text = `Protein.Names`), size = 2, alpha = 0.5) +
+  geom_hline(yintercept = -log(0.05, 10), linetype = "dashed", color = "red") +
+  geom_vline(xintercept = 2, linetype = "dashed", color = "red") +
+  geom_vline(xintercept = -2, linetype = "dashed", color = "red") +
+  geom_text_repel(aes(label = proteins_sig), max.overlaps = 20) +
+  scale_color_manual(values = c("black", "red")) +
+  labs(title = "Seer Proteograph: Mouse KMC-PDAC v. KMC Control",
+       x = "Log2(FC)",
+       y = "-log10(p-value)",
+       subtitle = "50% Sparsity Filter") +
+  theme_bw() +
+  #xlim(-5,5) +
+  theme(legend.position = "none") +
+  theme(plot.subtitle = element_text(face = "italic"))
+ggsave("seer_MUS_KMC_WetT_volc_plot.png")
+seer_MUS_KMC_WetT_volc_plot
+
+seer_MUS_KMC_WetT_volc_plotly = ggplotly(seer_MUS_KMC_WetT_volc_plot, tooltip = "proteins_sig")
+saveWidget(seer_MUS_KMC_WetT_volc_plotly, "seer_MUS_KMC_WetT_volc_plotly.html", selfcontained = F, libdir = "lib")
+
+#Remove list-type columns before writing Welchs result table
+w_seer_MUS_KMC_WetT_res_df = seer_MUS_KMC_WetT_res_df %>% dplyr::select(-c("data_KMC - PDAC","data_KMC_control"))
+write.table(w_seer_MUS_KMC_WetT_res_df, "~/Code/SomaLogic/Seer_MUS_KMC_WetT.tsv", sep = "\t", row.names = FALSE)
+```
+
+```{r Comparisons_Welchs_New_Result}
+#Find number of features - Seer KMC Welch's test, new search
+seer_newWetT_KMC_proteins = seer_MUS_KMC_WetT_res_df %>% mutate(UniProt = ifelse(grepl(";", Protein.Ids), sub(";.*", "", Protein.Ids), Protein.Ids)) %>% 
+                                                              mutate(Protein.Names = ifelse(grepl(";", Protein.Names), sub(";.*", "", Protein.Names), Protein.Names)) %>%
+                                                              mutate(Feature = ifelse(grepl(";", Feature), sub(";.*", "", Feature), Feature)) #%>%
+                                                              #dplyr::select(c(Feature)) %>% unique() #%>% nrow()
+#Find number of sig features - Seer KMC Welch's test, new search
+sig_seer_newWetT_KMC_proteins = seer_MUS_KMC_WetT_res_df %>% filter(p_val_sig == "Significant") %>% 
+                                                              mutate(UniProt = ifelse(grepl(";", Protein.Ids), sub(";.*", "", Protein.Ids), Protein.Ids)) %>% 
+                                                              mutate(Protein.Names = ifelse(grepl(";", Protein.Names), sub(";.*", "", Protein.Names), Protein.Names)) %>%
+                                                              mutate(Feature = ifelse(grepl(";", Feature), sub(";.*", "", Feature), Feature)) #%>%
+                                                              #dplyr::select(c(Feature)) %>% unique() #%>% nrow()
+
+#Features in common in both new search KMC DE (Welch's test) and old search KMC DE (Welch's t-test)
+seer_WetT_KMC_feature_intersect = dplyr::intersect(seer_WetT_KMC_proteins$Feature,seer_newWetT_KMC_proteins$Feature)
+#Sig features in common in both new search KMC DE (Welch's) and old search KMC DE (Welch's)
+seer_WetT_KMC_sigfeature_intersect = dplyr::intersect(sig_seer_WetT_KMC_proteins$Feature,sig_seer_newWetT_KMC_proteins$Feature)
+
+```
+
+```{r Old_Search_Full, include=FALSE}
+#Load full old search murine DIANN file
+# full_DIANN_MUS = read_tsv("/Users/sorianos/Code/Project_Disney/DIANN_mouse_authochthonous_lib_free.tsv")
+# #Code from Matt for DIANN raw data processing
+# full_DIANN_MUS = full_DIANN_MUS %>%
+#                     #Filter out peptides with Precursor and Protein Group intensities of 0
+#                     filter(Precursor.Quantity > 0) %>%
+#                     filter(PG.Quantity > 0) %>%
+#                     #Filter our any peptides & protein groups that have a Q value of > 0.01 (FDR 1%)
+#                     filter(Global.PG.Q.Value < 0.01) %>%
+#                     filter(Global.Q.Value < 0.01) %>%
+#                     filter(Q.Value < 0.01)
+# 
+# #Make new Sample, NP, replicate columns in data df with grep/substring
+# full_DIANN_MUS = full_DIANN_MUS %>% mutate(Sample = substring(Run,25,27)) %>%
+#                                         mutate(NP = ifelse(grepl("NP1", Run), "NP1",
+#                                                        ifelse(grepl("NP2", Run), "NP2",
+#                                                               ifelse(grepl("NP3", Run), "NP3",
+#                                                                      ifelse(grepl("NP4", Run), "NP4", "NP5"))))) %>%
+#                                         mutate(Replicate = paste(Sample, NP, sep = "_")) %>%
+#                                         mutate(Run = paste(Run,".d",sep = ""))
+# 
+# # #Rename anno column for file.name/run based left join (keeping all diann data rows, only present anno rows)
+# # mus_anno_df = mus_anno_df %>% filter(SampleName %in% Soma_anno_df$SampleName) %>%
+# #                               dplyr::select(c("File.Name","SampleName","Sample_ID","Group_final")) %>%
+# #                               unique()
+# # 
+# # #Merge  data with biological annotation using file name/run
+# # colnames(mus_anno_df)[colnames(mus_anno_df) == "File.Name"] = "Run"
+# combo_os_MUS_proteins = left_join(full_DIANN_MUS,mus_anno_df,by="Run")
+# 
+# #Convert output to summarized protein info by removing duplicate peptides
+# os_MUS_proteins = combo_os_MUS_proteins %>%
+#                 group_by(Run, Protein.Group, PG.Quantity, PG.Normalised, PG.MaxLFQ, PG.Q.Value) %>%
+#                 distinct(Run, Protein.Group, PG.Quantity, PG.Normalised, PG.MaxLFQ, PG.Q.Value, .keep_all = TRUE) %>%
+#                 ungroup() %>%
+#                 mutate(Log2_LFQ_Intensity = ifelse(PG.MaxLFQ == 0, NA, log2(PG.MaxLFQ)))
+# 
+# #Find number of protein IDs (removing NP duplicates) in seer KMC data - BEFORE ANY FILTERS
+# os_seer_KMC_proteins = os_MUS_proteins %>% filter(Group_final == "KMC - PDAC" | Group_final == "KMC_control") %>% dplyr::select(c("Protein.Ids","Protein.Names")) %>% unique() #%>% nrow()
+# 
+# #Filter to only keep KMC control/KMC-PDAC
+# os_MUS_proteins_KMC = MUS_proteins %>% filter(Group_final == "KMC - PDAC" | Group_final == "KMC_control")
+# 
+# # Filter to those proteins present in at least 50% of at least one of the 8 classes
+# os_filt_seer_MUS_KMC_df = os_MUS_proteins_KMC %>%
+#   filter(!is.na(Log2_LFQ_Intensity)) %>%
+#   group_by(Group_final) %>%
+#   mutate(max_samples = n_distinct(SampleName)) %>% #Calculate number of samples per status **CHANGED ALL REPLICATE TO SAMPLENAME**
+#   ungroup() %>%
+#   group_by(Group_final, Protein.Ids) %>%
+#   mutate(num_detected = n_distinct(SampleName), frac_detected = num_detected / max_samples) %>% #Calculate detection fraction of each prot ID, separated by status
+#   ungroup() %>%
+#   dplyr::select(c("SampleName", "Protein.Ids", "Group_final", "frac_detected")) %>%
+#   filter(frac_detected >= 0.50) %>% #Keep prot IDs w/ frac_detection > 50%
+#   dplyr::select("SampleName", "Protein.Ids") %>%
+#   unique() %>%
+#   mutate(presence_tag = "sufficient") #Add column for tag indicating validity of prot ID (row)
+# 
+# #Add presence tag data and remove other rows/prot ID entries
+# os_filt_prot_class_presence = os_MUS_proteins_KMC %>%
+#   left_join(os_filt_seer_MUS_KMC_df, by = c("SampleName","Protein.Ids")) %>%
+#   mutate(presence_tag = ifelse(is.na(presence_tag), FALSE,TRUE)) %>%
+#   filter(presence_tag) %>%
+#   mutate(Feature = paste(NP, `Protein.Ids`, sep = "|"))
+# 
+# #Select the final data table for the comparisons
+# os_seer_MUS_KMC_final_df = os_filt_prot_class_presence %>%
+#   dplyr::select(c("Replicate", "SampleName", "Group_final", "Protein.Ids", "Protein.Names", "First.Protein.Description", "Feature", "PG.MaxLFQ", "Log2_LFQ_Intensity"))
+# 
+# #Find number of protein IDs (removing NP duplicates) in seer KMC data - AFTER sparsity filter, BEFORE WiT >1 filter
+# os_seer_KMC_proteins_filt = os_seer_MUS_KMC_final_df %>% dplyr::select(c("Protein.Ids","Protein.Names")) %>% unique() #%>% nrow()
+# 
+# #Transform data to wide form for Wilcox test, filter out NAs and count = 1 (not possible w/ Wilcox)
+# os_seer_MUS_KMC_WiT_df = os_seer_MUS_KMC_final_df %>%
+#   group_by(Feature, Group_final) %>%
+#   summarize(data = list(Log2_LFQ_Intensity), count = n(), .groups = "drop") %>%
+#   pivot_wider(names_from = Group_final, values_from = c(data, count)) %>%
+#   # filter(!(is.na(`count_Healthy control - late`) | `count_Healthy control - late` == 1)) %>%
+#   # filter(!(is.na(`count_Lethal PanIN - late`) | `count_Lethal PanIN - late` == 1)) %>%
+#   # filter(!(is.na(`count_Non-lethal PanIN`) | `count_Non-lethal PanIN` == 1)) %>%
+#   # filter(!(is.na(`count_Lethal PanIN - early`) | `count_Lethal PanIN - early` == 1)) %>%
+#   # filter(!(is.na(`count_Healthy control - early`) | `count_Healthy control - early` == 1)) %>%
+#   # filter(!(is.na(`count_KPC - lung`) | `count_KPC - lung` == 1)) %>%
+#   filter(!(is.na(`count_KMC_control`) | `count_KMC_control` == 1)) %>%
+#   filter(!(is.na(`count_KMC - PDAC`) | `count_KMC - PDAC` == 1))
+# 
+# #Wilcox test - store pvalue and difference
+# os_seer_MUS_KMC_WiT_res_df = os_seer_MUS_KMC_WiT_df %>%
+#   rowwise() %>%
+#   mutate(wt_pval = wilcox.test(unlist(`data_KMC - PDAC`), unlist(`data_KMC_control`))$p.value) %>%
+#   mutate(Diff = median(unlist(`data_KMC - PDAC`)) - median(unlist(`data_KMC_control`))) %>% 
+#   ungroup() %>% 
+#   mutate(wt_pval_BH = p.adjust(wt_pval, method = "BH"))
+# 
+# # seer_MUS_KMC_WiT_anno_df = seer_MUS_KMC_final_df %>% 
+# #   dplyr::select(c("Feature", "Protein.Ids", "Protein.Names", "First.Protein.Description")) %>% 
+# #   distinct(Feature, .keep_all = TRUE)
+# 
+# os_seer_MUS_KMC_WiT_res_df = left_join(os_seer_MUS_KMC_WiT_res_df, seer_MUS_KMC_WiT_anno_df, by = "Feature")
+# 
+# os_seer_MUS_KMC_WiT_res_df = os_seer_MUS_KMC_WiT_res_df %>% 
+#   mutate(p_val_sig = ifelse(wt_pval_BH < 0.05, "Significant", "Non"),
+#          proteins_sig = ifelse(wt_pval_BH < 0.05, `Protein.Names`, "")
+#   )
+```

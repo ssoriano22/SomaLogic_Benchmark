@@ -1,0 +1,1247 @@
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Lab Notebook: Somalogic SomaScan - Seer Proteograph Benchmark
+
+Author: Sophia Soriano          Mentors/Collaborators: Matthew Chang, Mark Flory, Jessie May Cartier, OHSU CEDAR
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Project Overview:
+
+Comparison of SomaLogic SomaScan (aptamer-based) and Seer Proteograph (MS-based) proteomics methods when used to analyze the same two sets of mouse (PDAC/normal - Project Disney subset) and human (Prostate cancer/normal - Project Orion) plasma samples.
+
+Online Links to Info/Data:
+
+SomaLogic SomaScan: https://somalogic.com/somascan-platform/
+SomaLogic SomaScan Data Portal: https://portal.somalogic.com/s/ (uses Duo OHSU)
+Seer Proteograph: https://seer.bio/
+Seer Proteograph PAS: Pending (requires unique login)
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+11JUL2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Created Somalogic_Benchmark.Rmd to start looking at how to upload SomaScan mouse data for annotation and analysis
+  ** Files located locally and on OneDrive SomaLogic_Benchmark folder
+  ** Mouse sample annotations: Project Disney sample annotations from Matt - sample_NP_annotation_mouse.tsv
+  ** Mouse SomaScan data: subset of Project Disney samples submitted for analysis - OHS-2227720_2022-10-17/SS-2227720_v4.1_other.hybNorm.medNormInt.plateScale.medNormSMP.adat
+* Installed SomaDataIO package (O NOT 0) from SomaLogic to allow R to read adat files correctly (using read_adat())
+  ** https://github.com/SomaLogic/SomaDataIO
+  ** Also installed Biobase package as suggested...apparently two functions depend on that package. Needed BiocManager install.
+* Renamed SampleId/Sample_ID columns to the latter to match in both mouse data and anno dfs
+* Apparently merge() is deprecated for their soma_adat class (although the github says it should work, R produces a fatal deprecation error). Replaced with left_join() by "Sample_ID" to preserve controls in data df and remove any Project Disney samples not sent to SomaLogic
+* Need to remove " A" from Sample_ID values in data df before join, but otherwise the join seems to have performed as expected
+  ** 88 Samples (including controls) in SomaScan mouse data file
+* Experimenting w/ regex in R to remove " A" from the end of each Sample_ID value that is not a control
+  ** https://www.datacamp.com/tutorial/regex-r-regular-expressions-guide
+  ** https://stringr.tidyverse.org/reference/str_replace.html
+  ** Regex is different in R compared to python...very slightly
+  ** Ended up using str_replace() to replace " A" pattern w/ "" (no regex required)
+* Left-join creates replicate rows - one for each filename in anno df
+  ** Filenames actually correlate to each NP
+  ** Not necessary for SomaLogic analysis, but might be useful for later correlation?
+  ** Condensed into a list of proteograph File_Names per sample - now 105 annotations to apply to 88 SomaScan samples
+* Are the samples re-plated? A1 plate/sample data doesn't match A1 plate/sample on submission form? Will ask Matt.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+12JUL2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Matt would've expected the plate labeling to remain the same between submission and result data
+* Wrote code to compare submission and results plate locations for each sample, for both mouse and human data sets
+  ** Mouse samples are all mismatched
+  ** Human samples are mismatched EXCEPT for one sample (RDY0016_30 A in D5). Lucky?
+* Maybe the addition of SomaLogic's controls mixes up the submission plating order?
+* Matt emailed SomaLogic (Kari Fleenor?) for confirmation that samples are reorganized on plates during analysis
+* Matched human annotations to human Soma results using same code as for mouse, but no proteograph-specific columns are included so that transformation isn't necessary
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+13JUL2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Started looking at SomaLogic's GUI for data analysis to see what kind of plots they think are of interest (see data portal link)
+* Began looking at the proteomic depth of coverage - number of protein groups (per sample to start)
+* Created df with only columns relevant for analysis (removed columns w/ all NA, or all same chr value), reorganized to begin w/ all annotations, then all aptamer data
+* Counted number of aptamers w/ non-NA/non-zero value for mouse data - apparently all 7596 aptamers are non-NA and non-zero for all 88 mouse samples/controls
+* Counted number of aptamers w/ non-NA/non-zero value for human data - apparently all 7596 aptamers are non-NA and non-zero for all 52 human samples/controls
+  ** SOMALOGIC QUESTION: Is this level of complete coverage normal? Would you expect every aptamer to be non-zero/non-NA for every sample in human and mouse?
+  ** SOMALOGIC QUESTION: Do we have access to some form of (aptamer seq# - protein group/family) matching dataset/guide? Other than the availability of that info via SomaLogic's online data analysis graphing tool?
+    *** PARTIAL ANSWER: ex_anno_tbl or ex_target_names from the SomaDataIO package has these annotations (see github). The former also includes Uniprot info/IDs and SomaLogic diagnostics. However, there are only 5284 row of aptamer seq IDs compared to the 7596 aptamer columns in our data...
+* Input from Matt on the mouse annotation df:
+  ** Group_final - best/most accurate mouse type anno
+  ** Sample Order - Order of samples w/in each plate
+* Next step - to assess assay variability (starting w/ comparing distribution of intensities per sample)
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+14JUL2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Created boxplot of mouse intensity distributions per sample
+  ** Results in squashed data, lots of outliers
+* Set y axis limit to 5000 and coloured by sample type - resulted in a much better graph
+  ** Mostly consistent, aside from calibrator/buffer samples, although the 2 hemolysis samples have a slightly wider intensity range. MAAAAAAAYBE one low-range outlier in the KMC-Control
+* Created same intensity distribution per sample boxplot for human dataset
+  ** Consistent as in mouse, with only calibration/buffer being different. No hemolysis samples in human dataset
+  ** Colored by both Clinical Diagnosis and Screening Outcome - no really groupings are apparent, data is pretty consistent
+* Noticed that Buffer, Calibration, and (human only) QC samples are combining for boxplots....maybe not an issue for this comparison but something to look into later/as necessary?
+* Next idea to assess variability - plot SD of each aptamer for controls and for samples/sample types
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+18JUL2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Created another "Category" columnin human and mouse dataframes to organize intensity distribution boxplots by broader categories
+  ** Still no outliers - data appears consistently distributed across samples/conditions
+* Calculated mean and sd for intensities per aptamer in new df (apt_stat_mouse_df)
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+19JUL2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Used aptamer mean/sd df to make histogram of aptamer means for both mouse and human
+  ** Majority of aptamers have low mean intensities
+* Made another set of boxplots - SomaLogic control intensities compared to our sample intensities (distribution comparison)
+  ** Samples fall within Somalogic control range
+* Loaded in alt df for mouse and human -> pre-normalization versions of intensity data
+  ** Def useful for 35uL to 55uL comparisons (since normalization normalizes the 35uL samples up to all the 55uL values)
+  ** Still no missing values/aptamers with no intensity for mouse alt or human alt
+* Repeated QC graphs (intensity distributions, etc.) for alt data and compared to normalized data
+  ** More variation across samples in alt data - especially in mouse data
+  ** Hemolysis samples are definitely different from the rest in mouse alt data (higher-shifted distribution)
+  ** 35uL samples are not very different in terms of distribution compared to 55uL samples in alt data
+  ** In mouse and human alt data, pooled rep B have lower intensity distribution compared to pooled rep A and pooled 35uL
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+20JUL2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Starting w/ mouse, set up wilcoxon tests for for each aptamer, comparing 35uL vs. 55uL (A+B) pooled samples
+  ** No data missingness, so 3 values for every 35uL, 6 values for every 55uL comparison
+  ** NOTE: Mouse and Human pooled B series are different from A series in pre-normalization (alt) data only...maybe significant? Or maybe an example of why normalization is used?
+  ** ANSWER: B series are diluted verisons of A series for both sample sets (35uL + PBS -> 55uL total)
+* Wilxon test p-value distributions are not great...35uL vs. 55uL_A is almost normal, 35uL vs. 55uL_B is OK right-skewed
+  ** Since each group is only 3 samples, maybe median comparison isn't the right test?
+* No significance in wilcoxon result volcano plots for either comparison with mouse data
+* Met with SomaLogic group:
+  ** ANSWER: Samples ARE randomized for plate location during analysis
+  ** ANSWER: Aptamer annotations are available w/ getAnalyteInfo() method (still not sure how I could have found this on github or R without knowing it existed...but it works so ok)
+  ** ANSWER: Buffer/Limit of Detection (eLOD) used to establish "noise" baseline for aptamer fluorescence intensities. Need to calculate or find LoD for each aptamer somewhere? eLOD explained in pptx slides - saved to ~/Code/SomaLogic
+* The online DataDelve portal has a graph for eLOD based on your data - generated eLOD line graphs for human, human alt, mouse, mouse alt
+  ** Alt versions (pre-normalization) are same as their normalized counterparts, slight difference between mouse and human plates, but barely.
+  ** eLOD (%100) = 10^3 - 10^4
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+21JUL2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Uploaded eLoD graphs to Rmd - the images aren't displaying in the knitted markdown, but do appear in the markdown script?
+  ** Used knitr package instead of Rmd default, seemed to fix problem
+* Added horizontal lines to intensity distributions for human and mouse at eLoD 10^3 = 1000
+* Filtered both datasets to separate out controls, replace aptamer values <1000 w/ NA
+  ** Aptamers resulting in values under eLoD for a given sample are likely background fluorescence
+  ** FINALLY found correct syntax for NA substitution in one of the comments here: https://stackoverflow.com/questions/27909000/set-certain-values-to-na-with-dplyr
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+24JUL2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+* Plotted number of aptamers above 1000 RFU for each sample, for mouse and human data
+  ** ggarrange fix for common.legend: https://stackoverflow.com/questions/74332510/common-legend-with-ggarrange-with-different-elements-in-each-plot
+  ** Mouse:
+    *** 4000-4300 range of aptamer count across all samples
+    *** Hemolysis: Higher than all other samples
+    *** Pooled 55uL: Grouping very close to each other, within range of other samples
+    *** Pooled 35uL: Slightly lower than pooled 55uL but within range of other samples. Slightly more diverse grouping
+    *** Pooled Diluted 55uL: Below 4000 - at the lowest end of sample range, very tight grouping
+    *** AK_220615_1_PL: similar low count as diluted sample. Only one sample, only slight annotation difference from AM and AL samples. All are KMC control, AK only sample annotated as KM in Group column (aptcount_filt_mouse_df)
+  ** Human:
+    *** 3500-3750 range of aptamer count across all samples
+    *** Pooled 55uL: High end of sample range - 3700
+    *** Pooled 35uL: Slightly lower than 55uL but within sample range - 3650-3700
+    *** Pooled Diluted 55uL: Below 3500 - at the lowest end of sample range, very tight grouping
+    *** RDY0016_06: similar low count as diluted samples. No obvious annotation differences compared to other samples.
+* Created same plots for alt (pre-normalized data)
+  ** Overall, same conclusions/data patterns as in normalized data, just slightly wider range of count values
+* Plotted intensity distributions as boxplots like before, this time w/ eLoD = 10^3 filtered data.
+  ** Mouse:
+    *** Generally consistent across samples, 1000-3000 RFU range, 6000 maximum excluding outliers
+    *** Hemolysis: Higher shifted range, but overlapping with other samples
+    *** KMC-PDAC: Some slight outliers in these samples (higher shifted range), which normalization effectively removes
+    *** Dilution Series: B series (diluted) is a little lower shifted range compared to others, normalization removes
+  ** Human:
+    *** Very consistent across samples, 1000-3000 RFU range, 5000 maximum excluding outliers
+    *** Dilution Series: B series (diluted) is very slightlyly lower range, but less than in mouse data
+    *** Data is consistent enough across samples that normalization doesn't appear to greatly effect distributions
+    
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+25JUL2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+* Set up WiT volcano plots for eLoD filtered mouse data (still pre-normalized data), dilution series comparisons (35uL vs 55uL_A, 35uL vs 55uL_B)
+  ** Introduces NA and NULL values - going to try without imputation first and filter out missingness based on count value
+  ** Some slight differences, but otherwise very similar to unfiltered results - no significant protiens identified
+  ** While not significant, there do appear to be more differences in protein measurement between 35uL and the 55uL diluted
+* Need to log transform x axis on volcano plots (diff values)
+  ** Doesn't really effect the pattern...will revisit later
+* Reviewing progress so far with Matt brought up questions relating to the most appropriate eLoD cutoff and why the current 10^3 cutoff is more severe in the human samples compared to mouse (should be the opposite if anything, with 88% aptamers effective for mouse proteins)
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+26JUL2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+* Plotted the intensity distributions of the removed (filtered out) aptamers per sample
+* Loaded SomaLogic Mouse Signaling Metric excel file into R to add aptamer detection quality to df
+  ** First load didn't work due to formating, saved a new version with the headers removed, and then did additional reformating/labeling in R
+  ** Realized this should be added to the whole mouse df, regardless of aptamer filtering status
+  ** Merged mouse signal metrics with mouse aptamer annotation df
+* Created aptcheck df for mouse - instead of replacing intensities below eLoD with NA like in intensity distribution plots, I instead created a new flag column for TRUE (above eLoD) or FALSE (below eLoD)
+  ** Merged all mouse aptamer annotation data to this aptcheck df for the mouse data
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+27JUL2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Made intensity boxplots for data by aptamer quality in mouse and sample group, for aptamers above eLoD and below eLoD
+  ** Lots of NA quality values...meaning lots of aptamers not included on that mouse signal metrics list?
+* Made separate quality category for Fc_MOUSE aptamers...not really sure what these are. They're not included in the metric table (so NA qualities), but are also present in the human aptamer annotations
+  ** Fc_MOUSE seems to always be Q99LC4 (uniprot) which is mouse Igh (immunoglobulin). Maybe just controls to test for mouse vs. human samples?
+* Boxplot revisions with separate Fc_MOUSE column greatly reduce the amount of aptamers grouped in the NA quality section on the x axis
+  ** Fc_MOUSE now seems to compose the most aptamers greatly above eLoD = 10^3
+* Created same boxplots for human data to confirm Fc_MOUSE aptamers are low-range intensities in those samples
+  ** Yes, the Fc_MOUSE aptamer intensity range is much lower in human samples compared to the mouse samples
+  ** So, does the eLoD need to be much higher then? Maybe looking at doubling each aptamer's buffer as a cutoff? Somalogic recommended signal-to-noise ratio of 2.
+* Created summary bar graph with aptamer counts per eLoD_Quality condition, comparing between mouse and human results
+  ** Still needs work to be interpretable
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+28JUL2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+* Split aptcheck bar graph into below eLoD and above eLoD graphs comparing mouse and human aptamer counts per condition
+  ** Data distribution is odd/unexpected. Patterns are very similar above and below eLoD = 10^3 for mouse and human, I would have expected more of the low quality mouse aptamers to be in the below eLoD category
+  ** Maybe this suggests that eLoD = 10^3 isn't the right way to remove noise
+* Going to try a different filter based off of SomaLogic's recommended signal to noise ratio (SNR), setting the cutoff per aptamer at double the buffer value for that aptamer
+* Talked with Matt about the abve change - we agree that's a better eLoD calculation. Will consult with SomaLogic references/pdfs for guidance calculating eLoD using buffers
+* Created third version of Rmd to try new eLoD filter
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+31JUL2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+* Met with Theresa - she explored the aptamers a bit more...maybe I should include a organism/type/aptnum table at start
+* Ran into the same problem as earlier with the aptamer counts being extremely high with the actual data/annotation combined (not just the aptamer df)
+  ** Realized I was counting for every sample when using the combined df - randomly selected one sample and counts now match aptamer df
+  ** Checked both mouse and humna data sets - all counts are equal across mouse and human
+* Found technical note online from SomaLogic that explains the spuriomer category
+  ** Spuriomer = effectively a "blank" aptamer - non-specific aptamers
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+01AUG2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Found MAD function - apparently there's one included in the base stats package: https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/mad
+* Calculated median, MAD, and eLoD per aptamer for MOUSE data - numbers seem acceptably predictable (4 Buffers in data)
+  ** eLoD = Median_blank + 4.9MAD_blank (from SomaLogic)
+* Joined eLoD column with the main long-form mouse data
+  ** Left join doesn't seem to work...but merge does. Maybe restarting R also helped
+* Repeated eLoD calculation for human data
+* Made scatterplot of aptamer counts per sample above eLoD of EACH aptamer for mouse and human
+  ** Filtered out SomaLogic controls
+  ** Filtered out some unnecessary annotation columns to confirm count is the same across rows (aptamers) of the same sample - yes
+  ** Needed to adjust SampleType column values to add dilution series annotations
+  ** Results are different from eLoD=10^3 filter attempt
+    *** Human aptamer counts per sample are extremely consistent around 7550
+    *** Mouse aptamer counts per sample are also consistent, maybe a little less than human, around 7525
+    *** Mouse hemolysis samples are clearly lower than the rest - <7400 and <7500
+    *** Dilution series samples look very similar to each other in each species. Diluted samples might be a little higher? But unlikely by a significant amount
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+02AUG2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+* Added a couple clarifying features to aptamer counts scatterplots:
+  ** Max aptamer count lines based off of eLoD calculation df - 7596 for human and mouse (blue)
+  ** Count line on mouse plot showing expected number of aptamers that were determined to perform with high or medium quality
+    *** From the 7289 human protein aptamers provided by SomaLogic from their mouse study, 87% (6379/7298 aptamers) are high or medium quality
+    *** QUESTION: Should I actually filter out aptamers untested in mouse in the mouse data set?
+    *** ANSWER: Not right now....maybe eventually depending on DE results.
+* Re-created sample intensity distribution boxplots with new and improved eLoD filter for both mouse and human
+  ** In general the results are largely similar to earlier versions of these graphs
+  ** Calibration (mouse and human) and hemolysis samples (mouse only) have slightly wider distributions than the rest of samples in each dataset
+  
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+03AUG2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+  
+* Added alt (pre-normalization) data versions back to Rmd, and created copies of each graph mentioned above (aptamer count and sample intensity distribution) for alt data
+  ** Aptamer count:
+    *** Mouse hemolysis counts are now in line with other mouse samples
+    *** AK mouse sample has a lower count compared to other samples
+    *** 55 Diluted sample counts are also slightly lower in mouse and human
+  ** Intensity Distribution:
+    *** Mouse hemolysis samples have a much wider distribution than other samples, including calibrators
+    *** Mouse AK sample has a narrower, lower distribution range than other samples (most similar to 55uL diluted samples)
+    *** Mouse AJ_220615_4_PL has a similar distribution to the hemolysis samples - this sample also had slightly lower counts in the normalized aptamer count plot
+* Set of wilcox test series for dilution series comparisons
+  ** A: 35uL vs. 55uL
+  ** B: 35uL vs. 55uL Diluted
+  ** C: 55uL vs. 55uL Diluted
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+04AUG2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+  
+* Plotted WiT results (and pvalue distributions) for mouse and human dilution series data
+  ** Mouse:
+    *** A - 35uL vs. 55uL: pvalue distribution isn't great, not very much fold change or significance seen in comparisons. Possibly too many similar values between groups based on warnings generated when running wilcox test code chunk.
+    *** B - 35uL vs. 55uL Diluted: good pvalue distribution, no significant proteins observed
+    *** C - 55uL vs. 55uL Diluted: good pvalue distribution, no significant proteins observed
+  ** Human:
+    *** A - 35uL vs. 55uL: good pvalue distribution, no significant proteins observed
+    *** B - 35uL vs. 55uL Diluted: good pvalue distribution, no significant proteins observed
+    *** C - 55uL vs. 55uL Diluted: good pvalue distribution, no significant proteins observed
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+07AUG2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    
+* Talked with Theresa - she recommended a couple more analysis methods related to quality filtering (i.e. MA plot, plot a couple low/medium/high aptamers to see intensity range per sample)
+* Created dfs to capture aptamers removed from each dataset with eLoD filter
+* Plotted count of removed aptamers for each dataset, grouped by sample
+  ** Main patterns are same as in count scatter plots for normalized and pre-normalized data
+  ** AK sample in mouse has the largest number of aptamers removed (~250) in pre-normalized data
+  ** Hemolysis samples have largest number of aptamers removed (125,>200)in normalized data
+* Plotted count of removed aptamers for each dataset, grouped by quality
+  ** Predominantly low quality aptamers being removed in either mouse dataset, very few high quality aptamers are removed
+* Created scatterplot for both mouse datasets showing intensity distribution of example high, medium, and low mouse-quality-aptamers (one each)
+  ** Low quality aptamer appears to have a wider variation in data values compared to the randomly selected medium and high quality aptamers
+  ** Larger variation is more apparent in normalized data, but also apparent to a lesser extent in pre-normalization data
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+08AUG2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    
+* Fixed dilution series comparison to use filtered alt mouse data now that eLoD filter is improved, instead of unfiltered mouse alt data
+* Set up sections for differential WiT (w/ pvalue distributions) for the following comparisons of biological significance (taken from Matt's Project Disney 20230619 html):
+  ** DE1 - KMC-PDAC v. KP Late: reveals differentially abundant proteins in autochthonous PDAC model
+    *** Technically it said KPC-PDAC, but I don't see a category for that....so I'm going to assume KMC w/ typo for now
+  ** KPC-Lung v. KP Late: reveals differentially abundant proteins in autochthonous lung cancer model
+  ** KMC v. KMC-control: reveals differentially abundant proteins in autochthonous Myc-driven PDAC model
+  ** KPC-Early v. KP Early: reveals differentially abundant proteins in early lethal PanIN model
+  ** KPC-Late (Lethal PanIN – Late) v. KP Late: reveals differentially abundant proteins in late lethal PanIN model
+  ** KC-Late v. KP Late: reveals differentially abundant proteins in non-lethal PanIN model
+* Ran initial DE1 - KMC-PDAC v. KP Late
+  ** Normalized: No sig proteins
+  ** Pre-Normalization: Some significant proteins identified, but nothing with huge FC
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+09AUG2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* After talking with Matt, we agree that the B and C dilution comparisons (involving the diluted samples) should be resulting in SOME significant differences...so something might be wrong
+* Applied log2 transformation to intensities BEFORE wilcox tests to see if that makes the volcano plots look more...volcano-like
+  ** This does make the plot shapes more volcano-like, but no apparent difference in significant proteins
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+11AUG2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    
+* Created differentials for KPC - lung v. KP late: 0 significance
+* The BH correction is severely correcting raw pvalues...should I be using another method? Correcting for 7596 comparisons....
+* Created differentials for KMC v. KMC control: 0 significance
+* Is there a difference btwn KC and KPC early? Yes...proceeding based on annotaitons in other categories
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+14AUG2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Completed initial mouse DE comparisons:
+  ** Only the first comparison DE1 resulting in significant proteins...will reassess after viewing human results
+* Set up:
+  ** Human DE1 - case (adenocarcinoma) vs. all controls
+  ** Human DE2 - case (adenocarcinoma) vs. control (Benign)
+  ** Human DE3 - case (adenocarcinoma) vs. control (Benign Prostatic Hyperplasia)
+  ** Human DE4 - case (adenocarcinoma) vs. control (Prostatic Intraepithelial Neoplasia)
+* No significance in any plot AFTER BH p-value adjustment. Maybe need to use a different adjustment method?
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+15AUG2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Set up mouse hemolysis v. pooled 55uL comparison
+  ** No significance
+  ** Need to check annotations w/ JMay
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+16AUG2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    
+* Sent email to SomaLogic requesting confirmation of eLoD filter application at the pre-final normalization phase.
+* Sent JMay a teams message asking is there are non-hemolysis equivalents to the hemolysis samples (to use instead of the pooled 55uL samples)
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+17AUG2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Created boxplot version of removed atamers bar plot for mouse as per Matt's suggestion (split removed aptamers per sample by quality, plot counts as boxplot)
+  ** Confirmed before filteing out NA quality - all filtered out are control aptamers (spuriometer, non-human (other than mouse), non-biotin, etc.)
+  ** Labeled outliers by Sample_ID to determine which samples had irregular numbers of aptamers removed by eLoD filter (mostly high, but some low)
+* Created boxplot version of aptamer intesities grouped by sample, per quality for mouse (alt only) data
+  ** Graphing as boxplot hides any differences comparing low/med/high aptamer across samples...ranges appear to be in the same 10ish area (for log2(intensity))
+* Created different version of annotation df to use in SomaLogic DataDelve result comparison...since the Sample_ID columns are slightly different
+  ** Can't get rid of SampleName column for some reason....
+  ** Got weird extra column that was shifting all values one over from the right column name. The write.table() fxn was printing rownames too...set those to NULL and the funciton to FALSE fixed it
+* SomaLogic DataDelve:
+  ** Merged new annotation df, removed samples w/o group_final annotation (pooled samples, etc.)
+  ** Somalogic Result for KMC-PDAC vs. KMC_control:
+    *** Used the "U-test" option, which is Mann-Whitney or Wilcox test
+    *** The raw P-value volcano plot has significance, as suggested by my p-value distributions
+    *** The FDR-adjusted volcano plot (equivalent to BH) LOOKS VERY SIMILAR TO MY BH VOLCANO PLOT
+    *** The Bonferroni-adjusted volcano plot has 0 significance of any sort
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+18AUG2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Matt suggests some comparisons btwn somalogic and seer results: total protein IDs (do they match? More IDs in one method? etc.)
+  ** In cases where there IS overlap in protein ID - agreement in fold change(log2_Intensity)?
+  ** Methods to match btwn datasets: 1) use only 1-protein protein group IDs, 2) take first protein in group cases (likely start w/ this 2nd method)
+* Matt also suggests running t-test version in my code and somalogic and comparing those results
+  ** Need to assess variance and normality for this - start w/ KMC-PDAC v. KMC control
+* Started filling in data for milestone presentation (8/28/2023)
+  ** Counted number of aptamers/proteins per dilution condition - see tables
+  
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+21AUG2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Lena from SomaLogic replied that the eLoD filter should be applied to normalized data....see email
+* Set up WiT comparison btwn Soma and Seer KMC-PDAC v. KMC_control protein IDs
+  ** Only two intersecting Protein IDs: P97857, Q8K2Y0
+  ** Similar wt_pval_BH in normalized data, not in pre-normalized data
+  ** P97857 has different magnitude fold change bwtn methods in normalized data, similar magnitude in pre-normalized data
+  ** Q8K2Y0 is measured on 4 NPs, all diff magnitude fold change from Soma
+* Set up t-test for Mouse DE3 (KMC-PDAC v. KMC_Control) - Welch's for now since variance/normality not yet assessed
+  ** No sig proteins ID'd
+* Set of TT comparison btwn Soma and Seer KMC-PDAC v. KMC_control protein IDs
+  ** Same two protein IDs as in WiT version (including same 4 NPs result)
+  ** Pre-normalized p-values are closer btwn methods than in normalized data
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+22AUG2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Calculated aptamer CVs across samples for total (single) boxplot and by-group boxplot
+  ** Will review with Matt - in general these seem good
+* Created bar graphs comparing mouse normalized and pre-normalized data versions of hemolysis vs. pooled 55uL for hemoglobin and haptoglobin
+  ** In general not much difference between groups, although there are more differences in pre-normalized data (meaning normalization makes hemolyzed samples ok?)
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+23AUG2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+* Created tables for aptamer_target info on hemolysis protein comparison graphs (to clean up facet grid plots)
+* Added ggsave lines to necessary graphs to save image versions to use in milestone presentation instead of screenshots
+  ** Corrected image save for low quality intensity distribution by specifying width/height
+* Tried SynGO as a way to find a method for matching mouse to human gene/protein orthologs
+* Doesn't translate between species...just mouse to mouse or human to human
+* Performed match (normalized data) based on all lowercase gene abbr. (should give an approximate number of protein ID overlaps at least)
+  ** Results in 476 overlapping protein IDs btwn Soma and Seer panel for KMC-PDAC v. KMC control
+    *** From 7545 Soma aptamers and 2571 Seer Proteins
+    *** 57 of the overlap proteins have at least one significant Seer result (some multiple due to NPs)
+    *** So of the 322 significant proteins found in the Seer KMC-PDAC v. KMC control DE analysis, 57 proteins overlap with the SOMA assay (but are not significant - SOMA only using human-version proteins)
+* Calculated overall correlation coefficent (Pearson's r) = 0.27
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+24AUG2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Started boxplot FC version of mouse dilution series volcano plot
+* Made revisions to milestone presentation/graph output formatting
+  ** Corrected coloring on human intensity distribution boxplots and aptamer count scatterplot - https://stackoverflow.com/questions/20041136/avoid-ggplot-sorting-the-x-axis-while-plotting-geom-bar
+  ** See outlook emails for more edits
+* Adjusted axis labels/titles/fonts of plots for ilestone presentation - may have to change some back at some point (esp. ggarrange-combined graphs - some are separate now)
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+25AUG2023 --> 31AUG2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Milestone 1 prep and presentation
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+01SEP2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Added dilution boxplot version for human dilution series results
+  ** FC in diluted samples makes sense, non-diluted samples close to 0 FC
+* Set up human DE Case v. Control method comparisons
+  ** Need to find or ask Matt about seer human data location
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+04SEP2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Made bar plots of log2 intensities across all samples (aside from dilution series) for the hemoglobin aptamers (NORMALIZED DATA)
+  ** Only seq.7965.25_HBAT (Hemoglobin subunit theta-1) and seq.6919.3_HBAZ (Hemoglobin subunit zeta) show higher intensities for hemolysis samples compared to others
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+05SEP2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Made sub-bar plots showing the seq.7965.25_HBAT and seq.6919.3_HBAZ hemoglobin hemolysis results to get a more detailed look
+* Also made plot version with pre-normalization data
+  ** More differences are clearer here btwn hemolysis and other samples
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+06SEP2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Project Disney Follow-on proposal:
+  ** p53 (KPC) vs Myc (KMC) PDAC tumor promoting alleles
+  ** ChatGPT for gene ontology investigations? Or internal CEDAR pipeline from someone Sadik is going to find?
+* Started editing milestone presentation to transform into WG presentation on Sep 19th
+* Made list of mouse samples submitted to SomaLogic for Matt to filter MS data as prep for re-searching
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+07SEP2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Received link to current Seer Human protein groups (Seer Pilot) from Matt
+  ** We WILL need to re-search the mouse and human MS data to follow typical statistical procedure (FPR), but is ok for now
+* Updated Rstudio and then kept running into zero-length vector error indicative of running out of Rstudio space
+* Condensed some dfs to free up space, and moved processing of Seer human case/control (CC) data to a separate R script
+  ** Separate script creates a verison of Seer human protein group data post-WiT - to match seer_KMC_df format for mouse data
+  
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+08SEP2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+* 320 overlap proteins found between SomaLogic and Seer human datasets (merged by UniProt ID)
+  ** Seer = 409 unique proteins
+  ** SomaLogic = 7577 unique proteins 
+    *** Realized filter was not actually being applied - fixed WiT errors and reduced number of df (now human is 1 dilution df and 1 DE df)
+* No significance observed from either SomaLogic or Seer results
+  
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+11SEP2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+* Analysis ideas from Theresa: start with Human on these since applicability of Soma aptamers to mouse proteins is questionable
+  ** Intensity plot per protein per sample for overlaps
+  ** Boxplot before-BH sig mouse proteins
+  ** Power calculation for BH test? Lower priority probably...
+* Write up general analysis plan for Mark - run by Matt too
+  ** See SomaLogic_Benchmark_Gantt
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+12SEP2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+* Created FC plot (by SomaApt_SeerFeature) for human Case v. Control (same as mouse KMC DE earlier)
+  ** SAA is the only SOMA result with FC>2 - all Seer NPs
+* Started assembling 2nd CompHub WG presentation for 19SEP2023
+  ** Largely based off of milestone presentation (Background, QC data)
+  ** Added some slides at the end on current DE work (incongruous results btwn Soma and Seer DEs, especially for mouse)
+  
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+13SEP2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Ran through first draft of presentation with Mark, Matt, and JMay
+  ** See notes for comments/suggestions
+  ** Need to fix x-axis DE titles to specify log2
+  ** Also need to make FC v. FC plots for mouse and human to get a protein-protein comparison
+  ** Also need to double check seer protein overlap - 409 seems low for total Seer protiens in human comparison
+* Made FC vs. FC plots - definitely calls out Seer and SomaLogic disagreeing on FC
+* Seer human proteins for CC comparison = 1914 (not 409 - originally forgot to include Feature in unique df count)
+  
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+14SEP2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Now realized that I actually did NOT want to include feature distinction in count since I'm comparing protein IDs/gene names only btwn Soma and Seer
+* Went back to the R script for WiT on the initial Seer protein data and calculated the overlap BEFORE 50% sparsity filter and WiT-necessary filter (>1 sample)
+  ** 1660 total Seer proteins BEFORE both filters
+* Also calculated total Seer proteins after 50% sparsity filter but BEFORE WiT-necessary filter
+  ** 441 total Seer proteins AFTER 50% sparsity filter, BEFORE WiT
+* So it seems like the 409 number is probably right for total human Seer protiens after both filters (50% sparsity + WiT-necessity)
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+15SEP2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Trying to incorporate quality scores into overlap protein list for mouse - realized that multi-aptamer genes will cause the count to be thrown off, need to make "hybrid" scored for those cases
+* Sent another version of the WG presentation to Mark + Matt w/ first round of edits made
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+20SEP2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* See WG presentation notes for suggestions from CompHub group on p-value correction/filtering
+* Started to work on adding biomaRt filter to improve the mouse overlap calculation
+  ** Created BiomaRt_Nomenclature_MouseHuman.R script for pivot function
+  ** First trying this: https://www.r-bloggers.com/2016/10/converting-mouse-to-human-gene-names-with-biomart-package/
+    *** https://bioconductor.org/packages/release/bioc/vignettes/biomaRt/inst/doc/accessing_ensembl.R
+  ** Not working...mirror errors in a variety of flavors. Try "asia" again for the support link.
+  ** Maybeworking on the VPN is the problem...will try on OHSU's network tomorrow
+  ** In the meantime trying the alternative mentioned here: https://support.bioconductor.org/p/129636/
+  ** This worked...so definitely an issue with actually getting the data from ensembl
+    *** Access is ok - the useEnsembl statements work, but not the getLDS line (with any mirror)
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+21SEP2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Apparently the Ensembl error is a recent-ish problem (or never fixed?): https://support.bioconductor.org/p/9143914/#9144090
+  ** Maybe an issue with v106 - they recommend trying the archived v105
+  ** Well, it's an issue with anything after v106. Using the dec2021 v105 doesn't generate the same access-based errors, but timesout on the useast, asia, www mirrors
+  ** Most recent complaint post I found from 02Aug2023 uses exactly the same code I'm trying: https://support.bioconductor.org/p/9153600/
+    *** Suggests using "Orthology.eg.db" package...so I'll try that next
+* Orthology.eg.db/Bioconductor Annotation db documentation: chrome-extension://efaidnbmnnnibpcajpcglclefindmkaj/https://bioconductor.org/packages/devel/bioc/vignettes/AnnotationDbi/inst/doc/IntroToAnnotationPackages.pdf
+  ** Seems to work, especially for human to mouse
+  ** For mouse to human, not all mouse gene names have an entrez/NCBI ID. Which this requires.
+* Apparently this is another option for ensembl-based: https://www.bioconductor.org/packages/devel/bioc/vignettes/ensembldb/inst/doc/ensembldb.html#2_Using_ensembldb_annotation_packages_to_retrieve_specific_annotations
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+22SEP2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* So the ensembldb package requires AnnotationHub since individual database pkgs were phased out: https://support.bioconductor.org/p/9141757/
+  ** And this for installing db locally: https://support.bioconductor.org/p/132230/#132231
+* The ensembldb package does not appear to have an equivalent to the "Orthology.eg.db" where I can look at two species datasets at once to do the ortholog match?
+* So unless I'm wrong about the above, biomaRt is still the best, if technical issues on their end can be resolved
+  ** Orthology.eg.db is somewhat working, but isn't handling the example "complex" cases well because they don't have an EntrezID
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+25SEP2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* After talking with Theresa, the ortholgy.eg.db is probably fine....but it still bothers me that the "complex" examples I'm trying don't work
+* After a little more searching, it seemed like KEGG might have an applicable tool/R package
+  ** https://www.biostars.org/p/80422/
+  ** chrome-extension://efaidnbmnnnibpcajpcglclefindmkaj/https://www.bioconductor.org/packages/devel/bioc/manuals/KEGGREST/man/KEGGREST.pdf
+* Trying out KEGG using LYZ as an example
+  ** I'm able to go from Human Entrez ID (NCBI) --> Human KEGG ID --> Gene KO Number --> Mouse KEGG ID --> Mouse NCBI ID
+  ** And from there I can run the mapIDs with the mouse orthology DB to populate the rest of the mouse data for that gene
+  ** AND IT WORKS
+  ** Now I need to figure out how to incorporate the KEGG steps into the convert fxn, and repeat for each mouse entrez ID = NA gene
+  
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+26SEP2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Moved KEGG orthology "fill-in" method into function after comfirming the KEGG functions work individually on LYZ
+  ** The list indexing required to access the KO# is VERY specific due to how KEGGREST designed the return of KeggGet method
+  ** Needed to specify character-type columns resulting from mapID - when no info is available, seems to default to list type which doesn't combine well w/ bind_rows()
+* Realized this might be nice to have in a package...maybe I should look at notes from Lisa's package creation lecture
+* Saved "cleaner" version of the working "final" functions in NomPivot_MouseHuman.R
+* Created a second function for Mouse --> Human
+  ** Realized that I need to account for no-unmapped genes cases in both functions
+  ** Added if/else statements to both checking the length of the "unmapped" df, stopping fxn before KEGG if length == 0
+* Need to account for completely unknown genes somehow - maybe a tryCatch when testing in the main code?
+  ** tryCatch seems overly complicated for this occasion
+  ** Used stop() in an if statement instead checking if "egs" vectors contain NA (and if so, generate pivot error)
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+27SEP2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Tried to implement nomenclature pivot fxn with SomaLogic (human) IDs
+  ** At least one gene causes an error in the KEGG code
+* Needed to add several ifelse catches in the KEGG code to remove empty lists and NA generated from IDs, KO#, or converted NCBI IDs not found
+* Successfully merged new mouse gene annotations with soma_KMC_df by human gene/SOMA_Target
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+28SEP2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Got overlap calculation working - Somalogic --> mouse version --> seer match check
+  ** 470 is the new overlap number. 6 less than upper to lower match 476 overlap number. Wonderful.
+* Tried Mouse --> human (seer --> soma) pivot - generates "differing number of rows: 1,0" error
+  ** Apparently this is caused by trying to combine df with different numbers of rows per column
+* Added print statements to mouse --> human function to figure out where error is occuring
+  ** Seems to be in one of the NCBI annotation column additions to the NCBI mapped_genes df (so before anything w/ KEGG)
+* Error had to do with the genes being passed in from the Seer data - made some adjustments to remove NA gene names and remove NP duplicates
+* Will run again on Monday to confirm
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+04OCT2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Ran mouse --> human function to test fixes described above
+  ** Fixed NCBI db-related errors, but new error involving the MUS_KO column
+  ** For some reason, one row value (3) is not being recognized as empty/NA
+* Human --> mouse function now also appears to have a KEGG problem...will address that after the mouse --> human issue is resolved.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+05OCT2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Finally figured out mouse --> human issue described above - MUS_KO column was still technically a list.
+  ** Removed list (changing column to character type) using [1] index
+  ** Fixed that problem, but now I'm seeing the same error as the one that showed up in the human --> mouse function:
+  ** "Error in (function (cond)  : 
+  error in evaluating the argument 'x' in selecting a method for function 'head': Bad Request (HTTP 400)."
+* Got print statment to find issue - "K04525" produces "Error in .getUrl(url, .listParser, nameColumn = 1, valueColumn = 2) : 
+  Forbidden (HTTP 403)."
+    ** Maybe this will help: https://www.biostars.org/p/366463/
+* Tried the try catch and it seemed to work, but then the same error in the next KEGG function line.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+06OCT2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Ended up removing the keggConv() line and using a sub() instead to go from HOM KEGGID to HOM NCBI ID - kegg fxn wasn't working
+* FINALLY got that function working as well as it can using KEGGREST
+* Seer --> Soma direction overlap using new mouse --> human nomenclature fxn, AND all uppercase columns (HOM_Gene/SOMA_Target) = 431 (w/ NP and apt duplicates removed)
+* Fixed human --> mouse fxn using same tryCatch statement as in mouse --> human fxn
+* Ran Soma --> Seer overlap again with all lowercase columns (MUS_Gene) = 475 (w/ NP and apt duplicates removed)
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+09OCT2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* KEGG was having more problems this morning with the mouse functions - removed head() functions, using [1] index instead
+* Seemed to fix issues - at least for now
+* Moving on to look at 1) aptamer quality of overlap proteins and 2) differences between soma --> seer (475) and seer --> soma (431) overlap results
+* Regarding 2) above:
+  ** 15 proteins are different between the two overlap sets (overlap_method_diff), but there should be more...not sure why this isn't covering all 44 proteins only present in the soma --> seer overlap
+  ** Used merge instead to combine the two overlap sets - 476 overlap proteins between the two, 15 only in the SOMA-starting set, 1 only in the Seer-starting set (see num variables)
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+10OCT2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+* Mouse -> human fxn once again having HTTP 403 error issues. Took the ifelse part of the KEGGID_RES/keggGet() function out and used string substitution instead of keggConv to get the keggID
+  ** Seems to have fixed it for now...but not sure it's a permanent fix
+* Created new df to capture aptamers covering overlaping proteins (527 aptamers covering 475 proteins) and their quality
+* Made boxplot of overlap aptamer quality results
+  ** How to add labels above bars in plots: https://intellipaat.com/community/16343/how-to-put-labels-over-geombar-for-each-bar-in-r-with-ggplot2
+  ** 54% Medium, 36% High, 10% Low mouse-quality aptamers covering overlap proteins
+* Also made v3 FC v. FC scatter plot using quality for colors instead of method/FC
+  ** No real pattern...maybe the medium and high follow a bit more of a diagonal line, but not to a great extent
+  ** There are a few low quality aptamers that covert the proteins Seer saw a major +FC in
+  ** Removed low quality aptamers and calculated correlation, r = 0.28 (not much improvement) (n = 1356)
+  ** Removed low and medium quality aptamers and calculated correlation, r = 0.31 (marginal improvement) (n = 551)
+* Made a v4 FC v. FC plot using p-value filter (<=0.25)
+  ** Either method pval <= 0.25, r = 0.29 (n = 1068)
+  ** Both methods pval <= 0.25, r = 0.36 (n = 306)
+* Wrote up project status summary on notebook pg 22 (Somalogic Benchmark Status) for Mark/Matt update and next steps planning mtg
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+12OCT2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Mouse --> human function STILL errors w/ HTTP 403 message on keggConv() for mus NCBIID to keggID
+  ** Swapped over to the manual string sub method of getting the keggID instead of using keggConv and it worked...guess I'll see if it works next time again
+* Murine PDAC Meeting:
+  ** myc or p53 genetic driver for PDAC phenotype - does the type of driver affect differentials (case vs control)
+    *** Likely yes (lots of diff prot results, esp. myc)
+    *** Interest in highest importance features: magnitude (FC), significance (p-value)
+  ** Tumor vs. plasma KPC plot - look for overlapping IDs/pathways
+    *** Has to be relative due to MS data, scaling would need to be addressed
+    *** Enrichment of tissue proteins to ID pathways, and categorize plasma proteins by those tissue pathway categories
+  ** Progression mapping of "important" protein IDs/pathways across early to late - CEDAR likes this question
+    *** Cluster/heatmap?
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+17OCT2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Mouse --> Human method still causing a HTTP 403 error - now switching between mutate lines for the mouse kegg ID doesn't fix the problem
+* Started outline for Fall Term Paper
+* Got ggplot code from Matt for setting up a shapes+color legend to use in FC comparison scatter plot to create more legible, compact figure for fall paper
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+24OCT2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* In the process of writing draft for fall UO paper
+* Realized I needed group numbers for methods section so ran the following in R console
+  ** group_mouse_summary = combined_mouse_df %>% mutate(Group_final = ifelse(!is.na(Group_final),Group_final,ifelse(SampleType == "Buffer","Buffer",ifelse(SampleType == "Calibrator","Calibrator",NA)))) %>% group_by(Group_final) %>% summarise(Group_Count = n())
+  ** group_human_summary = combined_human_df %>% mutate(Screening.Outcome = ifelse(!is.na(Screening.Outcome),Screening.Outcome,ifelse(SampleType == "Buffer","Buffer",ifelse(SampleType == "Calibrator","Calibrator",ifelse(SampleType == "QC","QC",NA))))) %>% group_by(Screening.Outcome) %>% summarise(Group_Count = n())
+* Created github repo to store code/maybe relevant figures for paper
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+25OCT2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Needed to confirm count numbers post-filter for both datasets, ran the following in R console
+  ** test_df = aptcount_filt_human_df %>% group_by(Sample_ID) %>% summarise(Sample_ID, numSigApt) %>% unique()
+  ** test_m_df = aptcount_filt_mouse_df %>% group_by(Sample_ID) %>% summarise(Sample_ID, numSigApt) %>% unique()
+ 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+27OCT2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+* Needed paper for log2 CV calculation from Matt again...not sure where that went to: https://medcraveonline.com/MOJPB/correct-use-of-percent-coefficient-of-variation-cv-formula-for-log-transformed-data.html
+* Made edits to some of the labeling for graphs used in my fall 2023 paper
+* Created new lucidchart combo-figures to fall 2023 paper
+* Both nomenclature functions are working again! yay! (OHSU must have fixed the internet connectivity problem...?)
+* Updated GitHub repo w/ updated code, nomenclature fxn, LB, and paper (just in case)
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+30OCT2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Created second version of nomenclature pivot functions - made changes to use UniProt IDs instead of gene names
+  ** Works with test case human to mouse
+  ** Works with test case mouse to human
+  ** Errors during KEGG stuff - found this that may fix the problem: https://stackoverflow.com/questions/77311991/biopython-kegg-rest-keeps-reporting-http-error-403-forbidden
+    *** And this: https://www.kegg.jp/kegg/rest/keggapi.html
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+31OCT2023 - (\^^/)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+* KEGG submissions of all ids in one URL or one url per id both result in HTTP 403 errors
+* Going to try 7 submissions of 100ish, if that doesn't work then remove KEGG part
+* Using the link to get to KO IDs does appear to work for 100ish IDs at once (7 splits for current human to mouse 668 proteins)
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+01NOV2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Redesigned human --> mouse nomenclature pivot using altered KEGG submission method is working:
+  ** 7545 aptamers, 6356 unique human UniProts submitted --> 9909 unique MUS UniProt results
+  ** 202 human submissions without a mouse uniprot found
+    *** test_df = NCBI_KEGG_anno_df %>% filter(is.na(MUS_UniProt)) %>% nrow()
+  ** Keeping HOM_KEGGID column as a flag for which rows need to use KEGG for the pivot (as opposed to just NCBI)
+* Switched v4 main code to use UniProt for Soma --> Seer merge instead of gene names
+  ** NEW protein overlap numbers - by UniProt now, using new KEGG query method:
+    *** Total overlap: 818
+    *** Seer-sig overlap: 101
+* Switched v4 main code to use UniProt for Seer --> Soma merge instead of gene names
+  ** NEW protein overlap numbers - by UniProt now, using new KEGG query method:
+    *** Total overlap: 833
+    *** Seer-sig overlap: 104
+* Uploaded updated scripts to github
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+02NOV2023 - *(@^@)*
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Examined uniprot-based overlap sets in more detail - keeping all uniprot and gene columns (dataset labels (Seer/Soma) and pivot labels (MUS/HOM):
+  ** Unique proteins to Soma --> Seer overlap set: 51
+  ** Unique proteins to Seer --> Soma overlap set: 66
+  ** Intersect of both overlap sets: 767
+* Examined uniprot-based overlap sets in more detail - UniProts only:
+  ** Unique proteins to Soma --> Seer overlap set: 37
+  ** Unique proteins to Seer --> Soma overlap set: 54
+  ** Intersect of both overlap sets: 712
+* Based on above results, for simplicity decided to only use intersecting proteins (MUS-HOM uniprot matches in common in both overlap sets - using uniprot/gene labels, 767 overlap proteins)
+  ** Resulted in a dataset for correlation calculations/plotting of 2843 unique SomaAptamer_SeerFeature pairs
+* 811 unique aptamers in new intersecting-filtered correlation dataset - adjusted quality bar graph to reflect that (used to be 527)
+  ** sscombo_KMC_corr_overlap_df$AptName %>% unique() %>% length()
+* Platform protein overlap (intersecting IDs only, keeping all mouse results) by Aptamer_SeerFeature pair:
+  ** sscombo_KMC_corr_df$AptName_SeerFeature %>% unique() %>% length() --> 2547
+  ** sscombo_KMC_corr_df$UniProts_MUS_HOM %>% unique() %>% length() --> 710
+  ** sscombo_KMC_corr_sig_df$AptName_SeerFeature %>% unique() %>% length() --> 181
+  ** sigprotID_sscombo_KMC_intersectfilt = sigprotID_sscombo_KMC_intersectfilt_df$UniProts_MUS_HOM %>% unique() %>% length() --> 88
+  ** sscombo_CChuman_corr_df$UniProt %>% unique() %>% length() --> 282 (out of 409 total Seer UniProts)
+  ** soma_CChuman_df$UniProt %>% unique() %>% length() --> 6377 total Soma UniProts
+  ** soma_KMC_df$UniProt %>% unique() %>% length() --> 6356 total Soma UniProts
+* Remade mouse FC/correlation plots for paper, updated new overlap numbers based on uniprot (instead of gene name estimates), and switched all terminologies/number to be UniProt-based comparisons (not gene name)
+* Created new script for subset raw data processing
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+07NOV2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Need pre-processing code from Matt for library free DIANN raw data processing
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+09NOV2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Made fonts larger for all figures used in fall UO paper
+* Created gOrth_test.R script to test g:Orth pivot method and eventually compare to custom pivot fxns
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+13NOV2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* gOrth works, and very quickly. But while it can take UniProt IDs as inputs, the only outputs are gene names/ensembl IDs
+  ** As my custom pivot functions return UniProt IDs, they might still be better suited for this protein-to-protein pivot
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+14NOV2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Added Matt's DIANN raw data processing code to the DIANN data processing script (Seer data)
+* Struggled for a bit to merge new raw DIANN data with biological annotations
+  ** Started w/ anno table I made for Matt (SomaLogic samples), but that didn't have any Seer (file name,sample,NP,etc.) info
+  ** End up going back to larger "original" murine annotation file, filtering to keep only SomaLogic-submitted samples, then left_join-ed to data (keeping all data, only keeping relevant annotations)
+  ** That seemed to work - example file name (20230321_mouse_PGplate2_S06_NP5_BF5_1_5883.d) only has one biological annotation (Lethal PanIN - early), so the merge looks successful now.
+* ToDo: Z-score transformation - look into other methods (data scaling methods? while maintaining distributions)
+* ToDo: iHUPO - look at website, decide on attendence
+* Started implementing same 50% sparsity filter as applied to seer_humanCC data, but saw a case of S01 having two different annotations again...will need to look at further.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+15NOV2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Tried to evalute the OMA Orthology API and website, but the help docs are...not convieniently written for a new user
+  ** chrome-extension://efaidnbmnnnibpcajpcglclefindmkaj/https://bioconductor.org/packages/release/bioc/manuals/OmaDB/man/OmaDB.pdf
+  ** https://omabrowser.org/oma/home/
+* Seem like OMA takes either gene or protein (UniProt) inputs, but I have only found gene-level output info so far, and all info is coded by OMA - very few universal IDs
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+16NOV2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Continued work on trying to get the new raw murine data merged with biological annotations...sent email to Matt about possibly needing to filter that annotation file by date? Or other...? Unless there's a more recent file mapping biological Group_final annotations to sample numbers in the new murine search?
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+17NOV2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Merging data + anno files by file.name seems to have worked now...not sure what tthe original issue was when I tried that merge before.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+20NOV2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Finished setting up WiTs for new Seer murine search KMC
+  ** 4514 Features compared btwn KMC-PDAC and KMC_Control
+  ** 48 Sig Features in this comparison - less than Matt's Welch's comparison (322 features)
+* Compared to "old search" with larger murine dataset
+  ** Old = 4083 sig features/7140 features
+  ** New = 48 sig features/479 features
+* No intersect in features found w/ intersect() between the two searches (KMC DE)
+  ** Manually searching, there does appear to be an overlap...so more investigating will be necessary
+  
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+21NOV2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Limited intersect() to only take into account features for "old" and "new" search result comparison
+  ** 3615 total features overlap between 4083 new and 7140 old
+  ** 65 shared sig features btwn 86 "new" and 479 "old" search sig features
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+28NOV2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Filtered out all groups besides KMC control and KMC-PDAC, then applied sparsity filter and recalculated total feature numbers and intersects
+  ** Old search Welch's Features Total: 7140
+  ** New search Wilcox Features Total: 5058
+  ** New search Welch's Features Total: 5058
+  ** Intersect - Old search Welch's v. new search Wilcox: 4342
+  ** Intersect - Old search Welch's v. new search Welch's: 4342
+  
+  ** Old search Welch's Sig Features: 479
+  ** New search Wilcox Sig Features: 29
+  ** New search Welch's Sig Features: 96
+  ** Sig Intersect - Old search Welch's v. new search Wilcox: 24
+  ** Sig Intersect - Old search Welch's v. new search Welch's: 65
+* Got full old search raw DIANN file from Matt
+  ** Both the old and new search results have the same results after protein rollup - 95767 rows, no diff seen w/ setdiff()
+  ** No diff found w/ setdiff() in WiT results
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+29NOV2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Looked at the code Matt used previously to process the old search - no "replicate" or similar columns are used
+* Changed lines of my sparsity filter code that used "Replicate" to use "SampleName" instead
+* Re-ran and checked feature numbers again:
+  ** Old search Welch's Features Total (seer_WetT_KMC_proteins): 7140
+  ** New search Wilcox Features Total (seer_WiT_KMC_proteins): 7373
+  ** New search Welch's Features Total (seer_newWetT_KMC_proteins): 7373
+  ** Intersect - Old search Welch's v. new search Wilcox (seer_KMC_feature_intersect): 5977
+  ** Intersect - Old search Welch's v. new search Welch's (seer_WetT_KMC_feature_intersect): 5977
+  
+  ** Old search Welch's Sig Features (sig_seer_WetT_KMC_proteins): 479
+  ** New search Wilcox Sig Features (sig_seer_WiT_KMC_proteins): 0
+  ** New search Welch's Sig Features (sig_seer_newWetT_KMC_proteins): 88
+  ** Sig Intersect - Old search Welch's v. new search Wilcox (seer_KMC_sigfeature_intersect): NA (WiT = 0)
+  ** Sig Intersect - Old search Welch's v. new search Welch's (seer_WetT_KMC_sigfeature_intersect): 61
+* Total features in both searches are now similar (7000ish), although not identical
+* Sig features is still very different...
+  ** Matt's code hard-codes sample numbers that are different from mine for KMC ctrl (16) and KMC-PDAC (7)
+    *** SomaLogic sample subset = 6 KMC-PDAC, 12 KMC Control
+  ** Odd since I thought the numbers were the same for those two groups btwn searches...will double check w/ Matt
+* Substituted Matt's WiT-prep code that starts with the protein rollup df (MUS_proteins/proteins_minimal)
+  ** Old search Welch's Features Total (seer_WetT_KMC_proteins): 7140
+  ** New search Wilcox Features Total (seer_WiT_KMC_proteins): 6460
+  ** New search Welch's Features Total (seer_newWetT_KMC_proteins): 6460
+  ** Intersect - Old search Welch's v. new search Wilcox (seer_KMC_feature_intersect): 5693
+  ** Intersect - Old search Welch's v. new search Welch's (seer_WetT_KMC_feature_intersect): 5693
+  
+  ** Old search Welch's Sig Features (sig_seer_WetT_KMC_proteins): 479
+  ** New search Wilcox Sig Features (sig_seer_WiT_KMC_proteins): 32
+  ** New search Welch's Sig Features (sig_seer_newWetT_KMC_proteins): 93
+  ** Sig Intersect - Old search Welch's v. new search Wilcox (seer_KMC_sigfeature_intersect): 28
+  ** Sig Intersect - Old search Welch's v. new search Welch's (seer_WetT_KMC_sigfeature_intersect): 68
+* At least there's no 0 overlap now...but still lower features and sig features. Will check w/ Matt on sample #s as potential cause?
+  ** Also ask about filtering out NAs before WiT/Welch's test - I do, he doesn't. When I don't I get a 7176 WiT res df of features, very close to the old search
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+30NOV2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Confirmed 6 KMC-PDAC and 12 KMC Control samples in the SomaLogic subset
+* Found a potential error in Matt's code that didn't actually filter out the repeated samples due to referencing the wrong column. Will include in email to Matt.
+  ** Code chunks: line 50 (might be a significant filter step), line 56 (just used to generate a table?), line 718/719 (hard-coded sample counts for KMC DE)
+  ** Making that correction adjusts Matt's sample counts per Group_final to 6 KMC - PDAC, 14 KMC Control. Now only 2 additional KMC Control samples in original search set: MurPDAC_P6_AM_2_PL, MurPDAC_P7_AM_1_PL
+* Re-ran Matt's script:
+  ** New KMC DE df (50% Sparsity Filter) = 8212 features before Welch's test (de_test_KMC_PDAC_KMC_control), 7848 features in result df (de_test_results_KMC_PDAC_KMC_control)
+* Re-ran my script - numbers are for test result df (not condensed to unique features)
+  ** Old search Welch's Features Total (seer_WetT_KMC_df): 7848
+  ** New search Wilcox Features Total (seer_MUS_KMC_WiT_res_df): 7176
+  ** New search Welch's Features Total (seer_newWetT_KMC_proteins): 7176
+  ** Intersect - Old search Welch's v. new search Wilcox (seer_KMC_feature_intersect): 5803
+  ** Intersect - Old search Welch's v. new search Welch's (seer_WetT_KMC_feature_intersect): 5803
+  
+  ** Old search Welch's Sig Features (sig_seer_WetT_KMC_proteins): 110
+  ** New search Wilcox Sig Features (sig_seer_WiT_KMC_proteins): 32
+  ** New search Welch's Sig Features (sig_seer_newWetT_KMC_proteins): 93
+  ** Sig Intersect - Old search Welch's v. new search Wilcox (seer_KMC_sigfeature_intersect): 27
+  ** Sig Intersect - Old search Welch's v. new search Welch's (seer_WetT_KMC_sigfeature_intersect): 45
+* Started v5 code to swap old Seer search with new Seer search
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+01DEC2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Ran SomaLogic_Benchmark_v5.Rmd with new search Seer WiT KMC DE results
+* Correlation coefficients are slightly improved - 0.21 all features, 0.37 w/ the p-val feature cutoff applied
+* Next step - look into Z-score/equivalent scaling methods to apply to Soma/Seer KMC comparison
+  ** https://www.r-bloggers.com/2021/06/how-to-find-z-score-in-r-easy-calculation-quick-guide/
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+04DEC2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Theresa really thinks I could be missing something from not looking at the raw data - feature vs. feature
+* Started re-organizing raw data for KMC Seer and Soma to make correlation plots (like those for FC)
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+05DEC2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Made two versions (one like the FC magnitude comparison, one like the correlation scatterplot)
+  ** No real diagonal agreement on the correlation scatterplot - L-shaped data pattern
+  ** Seer intensity data is much larger magnitude than Soma, but again no observable pattern
+* Split results into 5 parts - separate per Seer NP
+  ** For some NP (2 and 5 at least) the UniProts targeted by low-quality Soma-mers actually correlate better with the corresponding Seer UniProt
+  
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+07DEC2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+* Experimenting with limma (limma_test.Rmd) for the seer KMC subset of data
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+12DEC2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Created raw data and zscore intensity comparisons
+  ** Need to go back and add in SampleName filter - only look at one Sample at a time
+* Matt sent email for tasks on other projects - will be recorded in other lab notebooks
+  ** Also need to prep anything required for GitHub walkthrough, likely next week
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+13DEC2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Fixed issue with v5 code to preserve previous corr graph results using Log2 data from the SeerDataProcessing script
+  ** Added improved comments to SeerDataProcessing code to describe switching btwn raw, zscore, and Log2 data
+* Made new versions of correlation graph - raw intensities for each KMC PDAC sample, high and low quality aptamers
+  ** Mostly L patterned distributions again
+* Also made versions with Log2 intensities
+  ** Diagonal agreenment observed for most if not all data on all 12 sample graphs (low/high, 6 samples)
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+21DEC2023
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Went back to figure out why Log2 corr graphs (raw data - not WiT) were too perfect
+  ** Found that one of the Soma columns was misleadingly title with LFQ - and I was graphing the same columns against each other
+  ** Used this: test_df = raw_sscombo_KMC %>% filter(NP == "NP2",Quality == "High",Group_final.x == "KMC - PDAC",SampleName.y == "MurPDAC_P4_AJ_5_PL")
+* Fixed the above and re-ran the corr log2 raw data plotting script with added color
+  ** Legend is too long to show - and colors/labels are a bit difficult to spot/read
+  ** However, now the data looks pattern-less (scattered)
+  ** Vertical lines of data of matching color likely due to multiple seer results for each soma aptamer match
+    *** Seer data had cases with multiple protein groups listed in a single ID - these were simplified to the first group in the ID
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+09JAN2024
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Do we still need to re-run human data to look at raw intensity comparisons?
+  ** Can use old search raw values - look for this data - seer raw intensities
+* Regression line on corr plots
+* Lack of ground truth....
+* Milestone review
+* Knit and see status of doc
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+10JAN2024
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Created new sections of code to perform human raw data/log2 zscore comparison
+  ** No nomenclature pivot necessary
+* Created list of human samples per case/ctrl (human_samples)
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+11JAN2024
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Created human graphs for corr and mag for two example case (RDY0016_30,RDY0016_04) and two example ctrl (RDY0016_14,RDY0016_29) samples for NP2
+  ** Removed aptamer quality filter - NA for human (mouse only)
+* Added regression line to corr plots
+  ** https://www.geeksforgeeks.org/how-to-create-a-scatterplot-with-a-regression-line-in-r/
+  ** http://www.sthda.com/english/wiki/ggplot2-scatter-plots-quick-start-guide-r-software-and-data-visualization
+* Added regression for the the murine corr plots as well
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+19JAN2024
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Knitting problem fixed itself (kinda) - takes several minutes but does run now
+* Somalogic milestone 2 ToDo:
+  ** Start w/ review of QC stuff from last presentation
+  ** Send matt WG presentation verison
+  ** Mean of all soma Log2 Zscore check -> should be 0
+  ** Possibly filter out multi-protein group rows in Seer data
+  ** Overlaid histograms of Soma and Seer intensities (x-axis)
+  ** Orthogonal Validation - No?
+  ** MS Alternative - no?
+  ** No ground truth to compare Soma vs. Seer to to really be sure which is right/wrong?
+  ** KMC v CTRL having no sig in Soma is VERY unusually - mice are sick, there should be a difference
+  ** Applying BH pval correction is really just trying to keep alpha = 0.05 (could just raise alpha = 0.20 (example))
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+22JAN2024
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* ZScore Calculation confirmation results (Checking mean and sd of Log2_ZScore columns - should be mean = 0 and sd = 1):
+  ** https://math.stackexchange.com/questions/3217144/why-does-the-average-z-score-for-a-standardized-distribution-always-equal-to-zer#:~:text=%22When%20an%20entire%20distribution%20of,distribution%20will%20always%20be%201.0.%22
+  ** https://www.statology.org/z-score-r/
+  ** Used diff verisons of this command: test_Seer_meanZScore_human = mean(raw_sscombo_human$Seer_Log2_Zscore)
+  ** Soma Murine:
+    *** Mean: 0.022
+    *** SD: 1.12
+  ** Seer Murine:
+    *** Mean: 0.087
+    *** SD: 1.073
+  ** Soma Human:
+    *** Mean: 1.376
+    *** SD: 1.334
+  ** Seer Human:
+    *** Mean: 0.072
+    *** SD: 1.013
+  ** Soma Human mean zscore is at 1...not sure why. Calculations all look correct/the same btwn all 4 datasets
+  ** Proceeding w/ overlaid histograms to see if there's a major visual difference
+* Log2 and Log2_ZScore histograms of intensities - each plot has Soma and Seer data series per species dataset
+  ** Murine:
+    *** Log2 - Same general shape (right skew), Soma slightly lower shifted on x-axis.
+    *** ZScore - both align to roughly 0 mean
+  ** Human:
+    *** Log2 - Soma slightly lower shifted on x-axis and more centered dist than Seer right-skew.
+    *** ZScore - Soma seems aligned to a mean slightly above 0...still not sure why other than maybe rounding effects carrying over? Seer dist closer to 0 centered.
+* Created noGroups verison of Rmd to test filtering out all protein "group" IDs (only keep IDs with one UniProt ID)
+  ** Cleaned up the graphs quite a bit, but still some laddering effect...will look into that tomorrow
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+23JAN2024
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Might be an issue with at least the human raw data correlation merging of Soma and Seer - Screening Outcome v. Group final columns do not always align - will check further in a bit
+* Realized the earlier command might be the wrong df to run this calculation on for checking ZScore calc for each of the 4 datasets, since some values are filtered out in mergewith Soma (only protein groups found in both Seer and Soma dfs are carried forward to correlation analysis)
+  ** Old: test_Seer_meanZScore_human = mean(raw_sscombo_human$Seer_Log2_Zscore)
+  ** New: test_Soma_meanZScore_human = mean(Soma_HOM_proteins$Soma_Log2_Zscore)
+  ** Soma Murine:
+    *** Mean: 7.86e-16 (effectively 0)
+    *** SD: 1
+  ** Seer Murine:
+    *** Mean: -5.18e-16 (effectively 0)
+    *** SD: 1
+  ** Soma Human:
+    *** Mean: 1.77e-15 (effectively 0)
+    *** SD: 1
+  ** Seer Human:
+    *** Mean: -2.69e-16 (effectively 0)
+    *** SD: 1
+  ** These are all extremely on target now for expected zscore-d data. So filtering for across-plaform IDs (murine = nomenclature pivots, human = inner_join()) to only keep protein IDs in common in both Soma and Seer datasets skews the dist a little bit (see above "Old" command numbers from yesterday).
+* Back to earlier comment on Soma-Seer raw data dfs not merging correctly:
+  ** Only seems to be an issue with the murine and human raw data correlation analysis because previous analysis used FC (no longer relying on sample vs. sample comparisons). Because this is raw data, I need to add the sample name to the murine UniProt_MUS_HOM column and human UniProts column being used for the two species merges
+  ** Added SampleName to UniProts_MUS_HOM columns before cross-platform merge
+  ** Separated out pre-graphing filtering to a single df all 4 graphs use (Log2 + ZScore, corr + mag plots)
+  ** Murine raw data correlation graphs appear fixed now - no more laddering
+* Emailed Matt about not having a way to match SampleName (i.e. RDY#) to a raw Seer human protein ID, which is the only identifier in the Soma data to be able to perform the cross-platform comparison.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+24JAN2024
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Matt sent another annotation file (loaded in Rmd as human anno2) with Sample Names matched to a sample number
+  ** Used new annotation file to add Sample ID/Subject ID annotations to UniProt IDs in both Seer and Soma data, and the cross-platform merge now uses a "UniProt_SampleID" column
+  ** Successfully removed laddering effect (still no change in overall platform correlation conclusions though)
+* Created new code chunk for summary table Matt requested for Milestone presentation - see email 23Jan2024
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+25JAN2024
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Created numProteins sumary table for the murine KMC and human prostate studies - and arranged in a legible format
+* Went thru Rmd and added captions/removed unnecessary figures so knitted HTML looks accceptable
+  ** More can be elaborated on later time-permitting, but each fig/set of figs should have at least a basic explanation
+* Added new correlation plots + table to powerpoint v1_SS
+* Sent all updates to Matt - maybe a different table summary was needed? Need to confirm
+* Notes:
+  ** Number of total IDs in the Seer data set (w/ groups), Seer count after 50% detection - Sophia to confirm
+  ** SomaLogic counts are good
+  ** pairwise cor()? - Matt to look into
+    *** Median correlation - boxplots of pairwise cor() results for each sample graph
+  ** Send corr_mag_df - murine to Matt - DONE
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+29JAN2024
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Re-ran script with combo medium and high murine aptamer quality scores (!= Low)
+  ** Also changed ggsave width to double (14in) to maybe make room for x-axis UniProt labels
+  ** ZScore mag graph now shows similar data means for Soma and Seer...but on individual inspection many UniProt IDs still have very different results btwn the two platforms
+* Tracing Seer data path to check number of proteins:
+  ** Running a df$Protein.Id %>% unique() %>% length() command to get number of protein IDs @ each step
+  ** Seer murine KMC:
+    *** After initial Precursor/Global/Q filter script and protein rollup, and filter to retain only KMC-PDAC and KMC control proteins in SB_RawSeerDataProcessing.Rmd: 7526
+    *** After 50% sparsity filter in SB_RawSeerDataProcessing.Rmd: 4085
+    *** At load into main SomaLogic Rmd: 4085
+    *** After filter step (remove unnecessary columns, remove or transform (keep first ID only) protein group IDs):
+      **** Remove protein group IDs: 1352
+      **** Keep 1st protein ID in protein group IDs: 3103
+    *** After nomenclature pivot - Seer mouse -> human only (removes Seer murine IDs with no human match found):
+      **** Remove protein group IDs: 984
+      **** Keep 1st protein ID in protein group IDs: 1913
+    *** Platform Overlap merge
+  ** Seer human Case v. Control:
+    *** Added MaxQuant contaminant filtering script to beginning of Seer_HumanCC.WiT.R script (from ER practice Rmd)
+    *** After initial contaminant filtering in Seer_HumanCC_WiT.R: 1545
+    *** After 50% sparsity filter in Seer_HumanCC_WiT.R: 424
+    *** At load into main SomaLogic RmD: 424
+    *** After merging with sample annotations (RDY#s): 424
+    *** After filter step (remove unnecessary columns, remove or transform (keep 1st ID only) protien group IDs):
+      **** Remove protein group IDs: 80
+      **** Keep 1st protein ID in protein group IDs: 424
+    *** Platform Overlap merge
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
