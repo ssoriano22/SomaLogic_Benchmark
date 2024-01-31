@@ -1230,6 +1230,34 @@ Seer Proteograph PAS: Pending (requires unique login)
       **** Keep 1st protein ID in protein group IDs: 424
     *** Platform Overlap merge
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+30JAN2024
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Seer protein count calculation tracing continued...
+  ** See Matt's email for his human Seer numbers - slightly off from what I get
+  ** Re-calculated my human Seer numbers after removing Log2_LFQ_Intensity == 0 results in initial filter (before 50% sparsity filter)
+    *** After initial contaminant filtering, protein rollup, and Log2_LFQ_Intensity == 0 filter: 1457 (Matt = 1443)
+    *** After 50% Sparsity filter: 424 (Matt = 906)
+  ** Noticed that Matt has slightly differently named columns (i.e. for contaminant-removal step), and filters by "" instead of NA...will confirm that I/he is using the correct file.
+    *** My version Seer_Human_proteinGroups.txt:  https://ohsuitg-my.sharepoint.com/personal/changma_ohsu_edu/_layouts/15/onedrive.aspx?csf=1&web=1&e=96ed3f&cid=6d0e357a%2Decff%2D4260%2D8f17%2D6f9c36033475&FolderCTID=0x012000BFB90517C627AA4D890D4550289841BE&id=%2Fpersonal%2Fchangma%5Fohsu%5Fedu%2FDocuments%2FMain%2FtimsTOF%20Data%20Archive%2F20210308%5FPrCa%5FPilot%5Fv2%2FRaw%5FFiles%5Fseparate%2Fcombined%2Ftxt
+    *** Input data files seem the same
+    *** I was using read_tsv(), Matt used read.delim(). There's at least a difference in the Reverse column (all NAs vs. "+" and ""). So I'll switch to read.delim()
+    *** With this correction, our initial/total protein count numbers align at 1443
+  ** I subbed Matt's script that sparsity filtered by Feature instead of mine that filtered by sample and condition
+    *** Both of our protien count results are now 906
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+31JAN2024
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Ran Seer_HumanCC_WiT.R script to make sure the correct files (with the read_tsv/read.delim error fixed) are made and read into the main SomaLogic Benchmark script
+* Ran the main script updated to v6 - WITH GROUPS INCLUDED (code to remove groups is commented out per species)
+  ** Saved all images, sent some in email to Matt as requested, uploaded results/updated scripts to GitHub 2024_Updates folder in SomaLogic_Benchmark
+* 
+
+
+
 
 
 

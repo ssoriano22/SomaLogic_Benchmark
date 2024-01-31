@@ -12,29 +12,35 @@ library(scales)
 library(naniar)
 library(stats)
 library(toolbox)
+library(wrProteo)
 
 #Load Seer data
-seer_CChuman_df = read_tsv("/Users/sorianos/Code/SomaLogic/Seer_Human_proteinGroups.txt")
+#seer_CChuman_df = read_tsv("/Users/sorianos/Code/SomaLogic/Seer_Human_proteinGroups.txt")
+seer_CChuman_df = read.delim("/Users/sorianos/Code/SomaLogic/Seer_Human_proteinGroups.txt")
+#seer_CChuman_df3 = readMaxQuantFile("/Users/sorianos/Code/SomaLogic/","Seer_Human_proteinGroups.txt",separateAnnot = FALSE)
+
 seer_CChuman_anno_df = read_tsv("/Users/sorianos/Code/SomaLogic/Seer_Human_annotation_NPs_separate.txt")
 seer_CChuman_anno_df = seer_CChuman_anno_df %>% dplyr::select(Condition, Experiment)
 colnames(seer_CChuman_anno_df)[colnames(seer_CChuman_anno_df) == "Experiment"] = "Sample_NP"
 
 #Filter out contaminants in MaxQuant DDA data
-seer_CChuman_df = seer_CChuman_df %>% filter(is.na(`Only identified by site`)) %>% 
-                                      filter(is.na(Reverse)) %>% 
-                                      filter(is.na(`Potential contaminant`))
-
+seer_CChuman_df = seer_CChuman_df %>% filter(Potential.contaminant == "") %>%
+                                      filter(Only.identified.by.site == "") %>%
+                                      filter(Reverse == "")
+                             
 #Transform dataset into same format as mouse seer file (seer_KMC_df) - create features, sample, NP columns; prepare for WiT
 seer_CChuman_df = seer_CChuman_df %>% pivot_longer(names_to = "Sample_NP",
                                                    values_to = "LFQ_Intensity",
                                                    cols = starts_with("LFQ")) %>%
-                                      dplyr::select(c("Protein IDs", "Protein names","Gene names","Sample_NP","LFQ_Intensity")) %>%
-                                      mutate(Sample_NP = gsub("LFQ intensity ","", Sample_NP)) %>%
+                                      dplyr::select(c("Protein.IDs", "Protein.names","Gene.names","Sample_NP","LFQ_Intensity")) %>%
+                                      mutate(Sample_NP = gsub("LFQ.intensity.","", Sample_NP)) %>%
                                       mutate(Log2_LFQ_Intensity = ifelse(LFQ_Intensity == 0, NA, log2(LFQ_Intensity))) %>% dplyr::select(-LFQ_Intensity) %>%
-                                      mutate(Sample = substring(Sample_NP, 1, 3), NP = ifelse(grepl("NP1", Sample_NP), "NP1",
-                                                                                              ifelse(grepl("NP2", Sample_NP), "NP2",
-                                                                                                     ifelse(grepl("NP3", Sample_NP), "NP3",
-                                                                                                            ifelse(grepl("NP4", Sample_NP), "NP4", "NP5")))))
+                                      filter(!is.na(Log2_LFQ_Intensity)) %>%
+                                      mutate(Sample = substring(Sample_NP, 1, 3),
+                                             NP = ifelse(grepl("NP1", Sample_NP), "NP1",
+                                                          ifelse(grepl("NP2", Sample_NP), "NP2",
+                                                                 ifelse(grepl("NP3", Sample_NP), "NP3",
+                                                                        ifelse(grepl("NP4", Sample_NP), "NP4", "NP5")))))
 
 #Merge in Case/Control annotation per Sample_NP
 seer_CChuman_df = merge(seer_CChuman_df, seer_CChuman_anno_df, by = "Sample_NP")
@@ -47,33 +53,42 @@ write.table(seer_CChuman_df, "~/Code/SomaLogic/Seer_HumanCC_raw_noSF.tsv", sep =
 
 ## Valid Value Filtering
 # Filter to those proteins present in at least 50% of at least one of the classes (Case, Control)
-filt_seer_CChuman_df = seer_CChuman_df %>%
-  filter(!is.na(Log2_LFQ_Intensity)) %>%
-  group_by(Condition) %>%
-  mutate(max_samples = n_distinct(Sample_NP)) %>% #Calculate number of samples per status
-  ungroup() %>%
-  group_by(Condition, `Protein IDs`) %>%
-  mutate(num_detected = n_distinct(Sample_NP), frac_detected = num_detected / max_samples) %>% #Calculate detection fraction of each prot ID, separated by status
-  ungroup() %>%
-  dplyr::select(c("Sample_NP", "Protein IDs", "Condition", "frac_detected")) %>%
-  filter(frac_detected >= 0.50) %>% #Keep prot IDs w/ frac_detection > 50%
-  dplyr::select("Sample_NP", "Protein IDs") %>%
-  unique() %>%
-  mutate(presence_tag = "sufficient") #Add column for tag indicating validity of prot ID (row)
+# filt_seer_CChuman_df = seer_CChuman_df %>%
+#   group_by(Condition) %>%
+#   mutate(max_samples = n_distinct(Sample_NP)) %>% #Calculate number of samples per status
+#   ungroup() %>%
+#   group_by(Condition, `Protein.IDs`) %>%
+#   mutate(num_detected = n_distinct(Sample_NP), frac_detected = num_detected / max_samples) %>% #Calculate detection fraction of each prot ID, separated by status
+#   ungroup() %>%
+#   dplyr::select(c("Sample_NP", "Protein.IDs", "Condition", "frac_detected")) %>%
+#   filter(frac_detected >= 0.50) %>% #Keep prot IDs w/ frac_detection > 50%
+#   dplyr::select("Sample_NP", "Protein.IDs") %>%
+#   unique() %>%
+#   mutate(presence_tag = "sufficient") #Add column for tag indicating validity of prot ID (row)
+# 
+# #Add presence tag data and remove other rows/prot ID entries
+# filt_prot_class_presence = seer_CChuman_df %>%
+#   left_join(filt_seer_CChuman_df, by = c("Sample_NP","Protein.IDs")) %>%
+#   mutate(presence_tag = ifelse(is.na(presence_tag), FALSE,TRUE)) %>%
+#   filter(presence_tag) %>%
+#   mutate(Feature = paste(NP, `Protein.IDs`, sep = "|"))
+# 
+# #Select the final data table for the comparisons
+# seer_HumanCC_final_df = filt_prot_class_presence %>%
+#   dplyr::select(c("Sample_NP", "Condition", "Protein.IDs", "Protein.names", "Gene.names", "Feature", "Log2_LFQ_Intensity"))
 
-#Add presence tag data and remove other rows/prot ID entries
-filt_prot_class_presence = seer_CChuman_df %>%
-  left_join(filt_seer_CChuman_df, by = c("Sample_NP","Protein IDs")) %>%
-  mutate(presence_tag = ifelse(is.na(presence_tag), FALSE,TRUE)) %>%
-  filter(presence_tag) %>%
-  mutate(Feature = paste(NP, `Protein IDs`, sep = "|"))
+num_samples = n_distinct(seer_CChuman_df$Sample)
 
-#Select the final data table for the comparisons
-seer_HumanCC_final_df = filt_prot_class_presence %>%
-  dplyr::select(c("Sample_NP", "Condition", "Protein IDs", "Protein names", "Gene names", "Feature", "Log2_LFQ_Intensity"))
+seer_HumanCC_final_df = seer_CChuman_df %>% 
+  #filter(Log2_LFQ_Intensity > 0) %>% 
+  mutate(Feature = paste(NP, Protein.IDs, sep = "_")) %>% 
+  group_by(Feature) %>% 
+  mutate(percent_detection = n_distinct(Sample)/num_samples) %>% 
+  ungroup() %>%
+  filter(percent_detection >= 0.5)
 
 #Find number of protein IDs (removing NP duplicates) in seer KMC data - AFTER sparsity filter, BEFORE WiT >1 filter
-seer_CChuman_proteins = seer_HumanCC_final_df %>% dplyr::select(c(`Protein IDs`,`Gene names`)) %>% unique() #%>% nrow()
+seer_CChuman_proteins = seer_HumanCC_final_df %>% dplyr::select(c(`Protein.IDs`,`Gene.names`)) %>% unique() #%>% nrow()
 
 #Write 50% sparsity filter version of data to saved table
 write.table(seer_HumanCC_final_df, "~/Code/SomaLogic/Seer_HumanCC_raw_50SF.tsv", sep = "\t", row.names = FALSE)
