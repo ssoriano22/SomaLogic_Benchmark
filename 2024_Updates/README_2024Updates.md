@@ -16,3 +16,5 @@ This repository contains all updated scripts, an updated lab notebook, and final
 | [SB_RawSeerDataProcessing.Rmd](SB_RawSeerDataProcessing.Rmd) | R markdown used to process murine Seer data from main OHSU CEDAR murine PDAC project. Revised to match human data processing pipeline. |
 | [LabNotebook_SomaBenchmarkcon_SS.txt](LabNotebook_SomaBenchmarkcon_SS.txt) | Lab notebook for SomaLogic Benchmark Project. |
 | [SomaLogic_Milestone2_20240209_v4.pptx](SomaLogic_Milestone2_20240209_v4.pptx) | Final version of Milestone 2 presentation - includes some figures created by Dr. Matthew Chang using this correlation data, but the plotting code is not located here.|
+| [v6_ResultsGraphs](v6_ResultGraphs) | PNG files of the v6 script correlation graphs (same as in [SomaLogic_Milestone2_20240209_v4.pptx](SomaLogic_Milestone2_20240209_v4.pptx))|
+| [v5_NoProteinGroups](v5_NoProteinGroups) | Version of v5 script with no protein groups included in the seer raw data. Also includes correlation graph PNG files and a table with protein counts for this v5 version.|
