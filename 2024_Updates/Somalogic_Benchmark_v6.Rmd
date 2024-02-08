@@ -1581,6 +1581,8 @@ WiT_boxDS_mouse_plot = WiT_boxDS_mouse_df %>%
 ggsave("WiT_boxDS_mouse_plot.png", width = 4, height = 3, units = "in")
 WiT_boxDS_mouse_plot
 ```
+\newline
+
 **Figure 13: Boxplot FC distributions of murine dilution series data. Median FC is on target for expected dilutions ratio from 35 to 55µL (0.6x).**
 
 #### Hemolysis Comparison
@@ -2525,15 +2527,15 @@ WiT_DE3_mouse_volcano_plot = WiT_DE3_mouse_df %>%
   geom_vline(xintercept = -2, linetype = "dashed", color = "red") +
   geom_text_repel(aes(label = proteins_sig), max.overlaps = 20) +
   scale_color_manual(values = c("black", "red")) +
-  labs(title = "SomaLogic Murine DE: KMC-PDAC v. KMC Control",
+  labs(title = "Mouse (Normalized)",
        x = "Log2(KMC-PDAC-KMC_Control)",
-       y = "-Log10(pvalue)") +
+       y = "") +
   theme_bw() +
   xlim(-5,5) +
   theme(axis.text.x = element_text(vjust = 0.5, size = 14)) +
   theme(axis.text.y = element_text(vjust = 0.5, size = 14)) +
-  theme(axis.title = element_text(vjust = 0.5, size = 16)) +
-  theme(title = element_text(size = 16)) +
+  theme(axis.title = element_text(vjust = 0.5, size = 14)) +
+  theme(title = element_text(size = 14)) +
   theme(legend.position = "none") +
   theme(plot.subtitle = element_text(face = "italic"))
 ggsave("WiT_DE3_mouse_volcano_plot.png")
@@ -2554,9 +2556,12 @@ WiT_DE3_mouse_alt_volcano_plot = WiT_DE3_mouse_alt_df %>%
   scale_color_manual(values = c("black", "red")) +
   labs(title = "Mouse (Pre-Normalization)",
        x = "Log2(KMC-PDAC-KMC_Control)",
-       y = "-log10(p-value)",
-       subtitle = "") +
+       y = "-log10(p-value)") +
   theme_bw() +
+  theme(axis.text.x = element_text(vjust = 0.5, size = 14)) +
+  theme(axis.text.y = element_text(vjust = 0.5, size = 14)) +
+  theme(axis.title = element_text(vjust = 0.5, size = 14)) +
+  theme(title = element_text(size = 14)) +
   xlim(-5,5) +
   theme(legend.position = "none") +
   theme(plot.subtitle = element_text(face = "italic"))
@@ -2568,7 +2573,7 @@ saveWidget(WiT_DE3_mouse_alt_volcano_plotly, "WiT_DE3_mouse_alt_volcano_plotly.h
 
 ```{r Plot_WiTVolcCombo_DE3_Mouse}
 fig_WiT_DE3_Mouse = ggarrange(WiT_DE3_mouse_alt_volcano_plot, WiT_DE3_mouse_volcano_plot, labels="AUTO", ncol = 2, nrow = 1)
-annotate_figure(fig_WiT_DE3_Mouse, top = text_grob("Wilcox Test: KMC-PDAC v. KMC Control", size = 14))
+annotate_figure(fig_WiT_DE3_Mouse, top = text_grob("Wilcox Test: KMC-PDAC v. KMC Control", size = 18))
 ggsave("fig_WiT_DE3_Mouse.png")
 ```
 
@@ -4572,7 +4577,7 @@ corr_mag_plot_df = raw_sscombo_KMC %>% filter(NP == "NP2") %>%
                                                Seer_Log2_ZScore_Intensity = Seer_Log2_Zscore,
                                                UniProts_MUS_HOM = str_replace(UniProts_MUS_HOM_Sample.x,"_MurPDAC.*",""))
 
-write.table(corr_mag_plot_df,"corr_mag_NP2_MurPDAC_P7_AK_1_PL_mhQ_plot_v6.tsv")
+write.table(corr_mag_plot_df,"corr_mag_NP2_MurPDAC_P7_AK_1_mhQ_plot_v6.tsv")
 
 corr_Log2Intensity_KMCCTRL_NP2_mhQ_MurPDAC_P7_AK_1_PL_plot = corr_mag_plot_df %>%
   ggplot(aes(x = Soma_Log2_Intensity, y = Seer_Log2_Intensity)) +
@@ -4590,16 +4595,19 @@ corr_Log2Intensity_KMCCTRL_NP2_mhQ_MurPDAC_P7_AK_1_PL_plot = corr_mag_plot_df %>
 ggsave("Murine_RawData_Graphs/corr_Log2Intensity_KMCCTRL_NP2_mhQ_MurPDAC_P7_AK_1_PL_plot_v6.png", width = 7.29, height = 4.51, units = "in")
 corr_Log2Intensity_KMCCTRL_NP2_mhQ_MurPDAC_P7_AK_1_PL_plot
 
+#Correlation calculation - murine KMC
+cor_corr_NP2_mhQ_MurPDAC_P7_AK_1_PL = cor(corr_mag_plot_df$Soma_Log2_Zscore,corr_mag_plot_df$Seer_Log2_Zscore,method="pearson",use = "pairwise.complete.obs")
+
 #Log2 Zscore correlation graph (same as above, but with Log2 Zscores compared)
 corr_Log2Zscore_KMCCTRL_NP2_mhQ_MurPDAC_P7_AK_1_PL_plot = corr_mag_plot_df %>%
   ggplot(aes(x = Soma_Log2_ZScore_Intensity, y = Seer_Log2_ZScore_Intensity)) +
   geom_point(aes(color = UniProts_MUS_HOM_Sample.x), size = 2, alpha = 0.5) +
   geom_smooth(method = lm, linetype = "dashed", color = "darkblue", fill = "lightblue2") +
   geom_text_repel(aes(x = Soma_Log2_ZScore_Intensity, y = Seer_Log2_ZScore_Intensity, label = UniProts_MUS_HOM), max.overlaps = 10, size = 2) +
-  labs(title = "SomaLogic vs. Seer Log2 ZScore Intensity",
-       subtitle = "KMC_control,MurPDAC_P7_AK_1_PL,NP2,Q:Med+High",
-       x = "Soma ZScore Intensity",
-       y = "Seer ZScore Intensity") +
+  labs(title = "SomaLogic vs. Seer Log2 Z-Score Intensity",
+       subtitle = "KMC Control,MurPDAC_P7_AK_1_PL,NP2,Q:Med+High",
+       x = "Soma Log2 Z-Score Intensity",
+       y = "Seer Log2 Z-Score Intensity") +
   theme_bw() +
   theme(axis.title = element_text(vjust = 0.5, size = 12)) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "darkgrey") +
@@ -4640,8 +4648,8 @@ mag_ZScore_KMCCTRL_NP2_mhQ_MurPDAC_P7_AK_1_PL_plot = corr_mag_plot_df %>%
   geom_point(aes(x = UniProts_MUS_HOM, y = Seer_Log2_ZScore_Intensity, colour = "Seer MS"), shape = "triangle", size = 1) +
   geom_hline(yintercept = mean(corr_mag_plot_df$Seer_Log2_ZScore_Intensity), linetype = "dashed", color = "red4") +
   # geom_text_repel(aes(x = UniProts_MUS_HOM, y = Seer_Log2_ZScore_Intensity,label = UniProts_MUS_HOM), max.overlaps = 8, size = 2) +
-  labs(title = "Log2 ZScore Intensity Comparison: SomaLogic vs. Seer",
-       subtitle = "KMC - CTRL,MurPDAC_P7_AK_1_PL,NP2,Q:Med+High",
+  labs(title = "Log2 Z-Score Intensity Comparison: SomaLogic vs. Seer",
+       subtitle = "KMC Control,MurPDAC_P7_AK_1_PL,NP2,Q:Med+High",
        x = "Protein IDs (UniProt_MUS_HOM)",
        y = "ZScore",
        colour = "Platform") +
@@ -4866,11 +4874,12 @@ corr_mag_human_plot_df = raw_sscombo_human %>% filter(NP == "NP2") %>%
                                                        Seer_Log2_Intensity = Seer_Log2_Intensity,
                                                        Soma_Log2_ZScore_Intensity = Soma_Log2_Zscore,
                                                        Seer_Log2_ZScore_Intensity = Seer_Log2_Zscore) %>%
-                                              dplyr::select(-UniProt.y)
+                                                dplyr::select(-UniProt.y) %>%
+                                                mutate(Pairwise_Cor = cor(Soma_Log2_ZScore_Intensity,Seer_Log2_ZScore_Intensity, method = "pearson", use = "pairwise"))
 
 colnames(corr_mag_human_plot_df)[colnames(corr_mag_human_plot_df) == "UniProt.x"] = "UniProt"
 
-write.table(corr_mag_human_plot_df,"corr_mag_NP2_Case_RDY0016_04_plot_v6.tsv")
+write.table(corr_mag_human_plot_df,"corr_mag_NP2_RDY0016_04_plot_v6.tsv")
 
 corr_Log2Intensity_HumanCase_NP2_RDY0016_04_plot = corr_mag_human_plot_df %>%
   ggplot(aes(x = Soma_Log2_Intensity, y = Seer_Log2_Intensity)) +
@@ -4888,16 +4897,19 @@ corr_Log2Intensity_HumanCase_NP2_RDY0016_04_plot = corr_mag_human_plot_df %>%
 ggsave("HumanCC_RawData_Graphs/corr_Log2Intensity_HumanCC_NP2_RDY0016_04_plot_v6.png", width = 7.29, height = 4.51, units = "in")
 corr_Log2Intensity_HumanCase_NP2_RDY0016_04_plot
 
+#Correlation calculation - human
+cor_corr_NP2_RDY0016_04 = cor(corr_mag_human_plot_df$Soma_Log2_Zscore,corr_mag_human_plot_df$Seer_Log2_Zscore,method="pearson",use = "pairwise.complete.obs")
+
 #Log2 Zscore correlation graph (same as above, but with Log2 Zscores compared)
 corr_Log2Zscore_HumanCase_NP2_RDY0016_04_plot = corr_mag_human_plot_df %>%
   ggplot(aes(x = Soma_Log2_ZScore_Intensity, y = Seer_Log2_ZScore_Intensity)) +
   geom_point(aes(color = UniProt), size = 2, alpha = 0.5) +
   geom_smooth(method = lm, linetype = "dashed", color = "darkblue", fill = "lightblue2") +
   geom_text_repel(aes(x = Soma_Log2_ZScore_Intensity, y = Seer_Log2_ZScore_Intensity, label = UniProt), max.overlaps = 10, size = 2) +
-  labs(title = "SomaLogic vs. Seer Log2 Zscore Intensity",
+  labs(title = "SomaLogic vs. Seer Log2 Z-Score Intensity",
        subtitle = "Human Case,RDY0016_04,NP2",
-       x = "Soma_Log2_Zscore_Intensity",
-       y = "Seer_Log2_Zscore_Intensity") +
+       x = "Soma Log2 Z-Score Intensity",
+       y = "Seer Log2 Z-Score Intensity") +
   theme_bw() +
   theme(axis.title = element_text(vjust = 0.5, size = 12)) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "darkgrey") +

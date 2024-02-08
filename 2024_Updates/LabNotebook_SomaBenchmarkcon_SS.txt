@@ -1254,15 +1254,38 @@ Seer Proteograph PAS: Pending (requires unique login)
 * Ran Seer_HumanCC_WiT.R script to make sure the correct files (with the read_tsv/read.delim error fixed) are made and read into the main SomaLogic Benchmark script
 * Ran the main script updated to v6 - WITH GROUPS INCLUDED (code to remove groups is commented out per species)
   ** Saved all images, sent some in email to Matt as requested, uploaded results/updated scripts to GitHub 2024_Updates folder in SomaLogic_Benchmark
-* 
+* Computed correlation coefficients for murine KMC and human corr plot (Soma Log2 ZScore v. Seer Log2 ZScore) results:
+  ** Murine KMC: -0.074
+  ** cor_corr_NP2_mhQ_MurPDAC_P7_AK_1_PL = cor(corr_mag_plot_df$Soma_Log2_Zscore,corr_mag_plot_df$Seer_Log2_Zscore,method="pearson",use = "pairwise.complete.obs")
+  ** Human Case v. Control: 0.206
+    ** cor_corr_NP2_RDY0016_04 = cor(corr_mag_human_plot_df$Soma_Log2_Zscore,corr_mag_human_plot_df$Seer_Log2_Zscore,method="pearson",use = "pairwise.complete.obs")
+* Created version of corr_mag tables (post-overlap) for Matt with all NP, all samples (mhQ, KMC comparison only for murine)
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+01FEB2024
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+* Researching pairwise correlation:
+  ** https://towardsdatascience.com/how-to-use-pairwise-correlation-for-robust-feature-selection-20a60ef7d10
+  ** Still don't see a way to do this calculation btwn two numbers per df row (as in a mutate command)
+  ** Technically, 0.2 = r is a very weak correlation still
+  
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+08FEB2024
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-
-
-
-
-
+* Matt has finished all-sample/all-protein correlation graphs and added to milestone 2 ppt
+  ** These use the final corr_mag dfs for all NP, all samples (all KMC for murine)
+* Final version of milestone 2 ppt submitted by Matt
+  * Practicing for presentation Feb 9
+* Uploaded all relevant files to GitHub
+* Final Conclusions:
+  ** Irrespective of reagent specificity which remains questionable, SomaScan has demonstrated desirable technical assay performance in terms of proteomic coverage, assay variability, and quantitation.
+  ** However, protein ID overlap btwn the SomaLogic and Seer platforms is very low for these two studies, and poor correlation is observed in FC and Z-Scored intensities
+  ** Furthermore, the absence of statistically significant differential protein expression in the case of the murine KMC study arm is alarming due to the biological study design of this comparison, and calls into question the feasibility of the SomaScan platform for non-human applications.
+  ** Other recent work in this area of proteomic method comparison further reinforce our results presented here for human samples.
+  ** At this time, we do not feel the platform is an acceptable alternative as a validation approach for discovery-based MS findings, or as a discovery tool for non-human sample types.
+  ** SomaLogic may be considered again for limited use in specific cases where MS methods are unsuitable.
 
 
 
