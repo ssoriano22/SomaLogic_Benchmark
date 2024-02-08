@@ -1,6 +1,6 @@
 # SomaLogic_Benchmark - 2024 Updates (Milestone 2 Work)
 
-This repository contains all updated scripts, an updated lab notebook, and final Milestone 2 SomLogic Benchmark presentation. Data is not included.
+This repository contains all updated scripts, an updated lab notebook, and final Milestone 2 SomaLogic Benchmark presentation. Data is not included.
 
 **Project Goal:** To benchmark the performance of SomaLogic SomaScan (7596 aptamer panel) against Seer Proteograph MS for proteomic analysis of murine and human data.
 
