@@ -4,7 +4,7 @@ This repository contains all custom scripts created during the SomaLogic Benchma
 
 **Project Goal:** To benchmark the performance of SomaLogic SomaScan (7596 aptamer panel) against Seer Proteograph MS for proteomic analysis of murine and human data.
 
-**Background & Results:** See [2023_Fall_Soriano](2023_Fall_Soriano.docx) for project details, methods, and results.
+**Background & Results:** See [2023_Fall_Soriano](2023_Fall_Soriano.pdf) for project details, methods, and results.
 
 **Repository Guide:**
 
@@ -15,6 +15,6 @@ This repository contains all custom scripts created during the SomaLogic Benchma
 | [NomPivot_MouseHuman_UniProtInput.R](NomPivot_MouseHuman_UniProtInput.R) | R script with custom functions for mouse-human nomenclature pivots based on submitted UniProt IDs. Currently used in main script for protein-based analysis. |
 | [Seer_HumanCC_WiT.R](Seer_HumanCC_WiT.R) | R script used to process human Seer FC data from main OHSU CEDAR prostate cancer proteomic study. |
 | [LabNotebook_SomaBenchmark_SS.txt](LabNotebook_SomaBenchmark_SS.txt) | Lab notebook for SomaLogic Benchmark Project. |
-| [2023_Fall_Soriano.docx](2023_Fall_Soriano.docx) | Fall term paper submitted for UO BGMP - contains project background and discussion on relevant results. |
+| [2023_Fall_Soriano.pdf](2023_Fall_Soriano.pdf) | Fall term paper submitted for UO BGMP - contains project background and discussion on relevant results. |
 | [2023_Fall_Soriano_Figures](2023_Fall_Soriano_Figures) | PNG images of the three figure results included in the [2023_Fall_Soriano.docx](2023_Fall_Soriano.docx) paper. |
 | [2024_Updates](2024_Updates) | Updates to this project post-BGMP final paper. |
